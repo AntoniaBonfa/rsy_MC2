@@ -67,15 +67,52 @@ Die Matrix enthält `r toString(dim(df_movie_genre)[1])` Filme und `r toString(d
 #Originalcode noch angepasst (ChatGPT wollte für die Genres einen Vektor schreiben mit den expliziten Genre-Namen. Da aber die Titel Spalte keine 1er enthält habe ich es weggelelassen)
 
 
-df_movie_genre$Combined_Genres <- apply(df_movie_genre, 1, function(row) {
+df_movie_genre$movie_profile <- apply(df_movie_genre, 1, function(row) {
   paste(names(row)[row == 1], collapse = '-')
 })
+
+df_genres_count <- data.frame(table(df_movie_genre$movie_profile))
+colnames(df_genres_count) <- c("genre", "count")
+
+
+df_top30 <-df_genres_count %>%  slice_max(n = 30, order_by = count) 
+df_rest <- df_genres_count %>%  filter(!(genre %in% df_top30$genre)) %>% summarise("count" = sum(count)) %>% mutate(genre = "Others combined")
+
+ggplot()+
+  geom_col(data = df_top30, aes(count, movie))+
+  geom_col(data = df_rest, aes(count, movie))
+
+
+df_top30 %>% 
+  rbind(df_rest) %>% 
+  ggplot(aes(count, reorder(genre, desc(genre)))) +
+  geom_col(data = . %>% filter(genre != "others combined")) +  # Regular bars
+  geom_col(data = . %>% filter(genre == "Others combined"), fill = "red")   # Highlighted 
+
+
+df_top30 %>% 
+  rbind(df_rest) %>% 
+  ggplot(aes(count, reorder(genre, desc(genre)))) +
+  geom_col(data = . %>% filter(genre != "others combined"), fill = "gray") +  # Regular bars
+  geom_col(data = . %>% filter(genre == "Others combined"), fill = "red")   # Highlighted 
+
+
+ggplot()+
+  geom_col(data = df_top30, aes(count, genre))+
+  geom_col(data = df_rest, aes(count, genre), fill = "red")+
+  labs(y = "",
+       x = "Anzahl Filme",
+       title = "Verteilung der Filme nach Genre-Kombination",
+       subtitle = "(Top-30 Kombinaitonen, von insgesamt ...)")
 
 ```
 
 ```{r 7. Nutzerprofile im Genre-Vektorraum erzeugen}
 #Zur Erzeugung der Nutzerprofile im Genre-Vektorraum wird empfohlen folgendermassen vorzugehen: 
 #• User-Genre-Profil Matrix durch Multiplikation von User-Liked-Items Matrix und Movie-Genre Matrix erzeugen.
+
+
+
 
 ```
 
