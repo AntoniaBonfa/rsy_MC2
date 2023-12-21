@@ -46,25 +46,30 @@ df_binary <- ifelse(df_user_ratings >3 ,1,0)
 ```{r 3. Dimension der User-Liked-Items Matrix prüfen und ausgeben}
 print(dim(df_binary))
 ```
-
+Die Matrix enthält `r toString(dim(df_binary)[1])` User und `r toString(dim(df_binary)[2])` Items. 
 
 ```{r 4. Movie-Genre Matrix für alle Filme erzeugen}
-m_movie_genre <- MovieLenseMeta
+df_movie_genre <- as.data.frame(MovieLenseMeta)
+df_movie_genre <- df_movie_genre %>% select(-c("year", "url"))
 
 ```
 
 
 ```{r 5. Dimension der Movie-Genre Matrix prüfen und ausgeben}
-dim(m_movie_genre)
+dim(df_movie_genre)
+
 ```
+Die Matrix enthält `r toString(dim(df_movie_genre)[1])` Filme und `r toString(dim(df_movie_genre)[2]-1)` Genres  
 
 
 ```{r 6. Anzahl unterschiedlicher Filmprofile bestimmen und visualisieren}
+#ChatGPT genutzt für den Code. Prompt: I am working with the MovieLense dataframe and I need to modify the MovieLenseMeta dataframe to have an additional column with the combination of genres. so if a movie has "Action" and "Adventure" as their genres, the column should have "Action-Adventure" as value. can you help me write this code?
+#Originalcode noch angepasst (ChatGPT wollte für die Genres einen Vektor schreiben mit den expliziten Genre-Namen. Da aber die Titel Spalte keine 1er enthält habe ich es weggelelassen)
 
-m_movie_genre %>% mutate(movieprofile = paste(across()))
 
-
-
+df_movie_genre$Combined_Genres <- apply(df_movie_genre, 1, function(row) {
+  paste(names(row)[row == 1], collapse = '-')
+})
 
 ```
 
