@@ -1,0 +1,166 @@
+---
+title: "Content based movie recommender Antonia"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
+  html_document:
+    highlight: tango
+    df_print: paged
+    table-of-contents: yes
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    code_folding: hide
+---
+
+###Bibliotheken
+```{r}
+library(tidyverse)
+library(gridExtra)
+library(dplyr)
+library(data.table)
+library(ggplot2)
+library(reshape2)
+library(rsample)
+library(recommenderlab)
+```
+
+
+7.1 Erzeugung von Film- & Nutzerprofilen [20 Punkte]
+
+
+```{r 1. MovieLense Daten einlesen}
+data(MovieLense)
+
+df_user_ratings <- as.data.frame(as(MovieLense, "matrix"))
+
+```
+
+```{r 2. Binäre User-Liked-Items Matrix für alle Nutzer erzeugen}
+
+df_user_ratings[df_user_ratings > 3] <- 1
+df_user_ratings[df_user_ratings <= 3] <- 0
+
+```
+
+
+```{r 3. Dimension der User-Liked-Items Matrix prüfen und ausgeben}
+print(dim(df_user_ratings))
+```
+
+
+```{r 4. Movie-Genre Matrix für alle Filme erzeugen}
+m_movie_genre <- MovieLenseMeta
+
+
+```
+
+
+```{r 5. Dimension der Movie-Genre Matrix prüfen und ausgeben}
+dim(m_movie_genre)
+```
+
+
+```{r 6. Anzahl unterschiedlicher Filmprofile bestimmen und visualisieren}
+
+
+
+
+```
+
+```{r 7. Nutzerprofile im Genre-Vektorraum erzeugen}
+#Zur Erzeugung der Nutzerprofile im Genre-Vektorraum wird empfohlen folgendermassen vorzugehen: 
+#• User-Genre-Profil Matrix durch Multiplikation von User-Liked-Items Matrix und Movie-Genre Matrix erzeugen.
+
+```
+
+```{r 8. Dimension der User-Genre-Profil Matrix prüfen und ausgeben}
+
+```
+
+
+```{r 9. Anzahl unterschiedlicher Nutzerprofile bestimmen mit Stärke der Genre-Kombination}
+#(a) vollständig
+
+
+#(b) binär 
+#Zur Analyse der Anzahl unterschiedlicher Nutzer-Profile, Fall (b) kann z.B. mutate(across(.cols =
+#everything(), .fns = ~ ifelse(.x > 0, 1, 0))) verwendet werde
+
+
+```
+
+
+7.2 Ähnlichkeit von Nutzern und Filmen [10 Punkte]
+```{r 1. Cosinus-Ähnlichkeit zwischen User-Genre- und Movie-Genre-Matrix berechnen}
+
+```
+
+
+2. Dimension der Matrix der Cosinus-Ähnlichkeiten von Nutzern und Filmen prüfen uns ausgeben.
+3. 5-Zahlen Statistik für Matrix der Cosinus-Ähnlichkeiten prüfen uns ausgeben.
+4. Cosinus-Ähnlichkeiten von Nutzern und Filmen mit Dichteplot visualisieren.
+5. Cosinus-Ähnlichkeiten von Nutzern und Filmen mit Dichteplot für Nutzer “241”, “414”, “477”, “526”,
+“640” und “710” visualisieren.
+
+
+
+Zur Berechnung der Cosinus-Ähnlichkeit von Nutzern und Filmen wird empfohlen folgendermassen vorzuge-
+hen:
+• Funktion zur Berechnung von Cosinus-Ähnlichkeiten zweier Matrizen namens calc_cos_similarity_twomtrx()
+implementieren, um Nutzerprofile und Filme im Vektorraum der Genres zu vergleichen. Die richtige
+Funktionsweise soll an einem einfachen Beispiel getestet und dokumentiert werden.
+Bei der Berechnung der 5-Zahlen Statistik der Cosinus-Ähnlichkeiten von Nutzern und Filmen sind explizit
+auch NAs und Mittelwert auszugeben.
+
+
+
+7.3 Empfehlbare Filme [6 Punkte]
+1. Bewertete Filme maskieren, d.h. “Negativabzug” der User-Items Matrix erzeugen, um anschliessend
+Empfehlungen herzuleiten.
+2. Zeilensumme des “Negativabzuges” der User-Items Matrix für die User “5”, “25”, “50” und “150” aus-
+geben.
+3. 5-Zahlen Statistik der Zeilensumme des “Negativabzuges” der User-Items Matrix bestimmen.
+Hinweise:
+Zum Maskieren bewerteter Filme (s. “Negativabzug”) wird empfohlen folgendermassen vorzugehen:
+• “Negativabzug” der User-Liked-Items Matrix konstruieren, indem Ratings aller bewerteten Filme auf 0
+gesetzt werden, die restlichen auf 1.
+
+
+
+
+7.4 Top-N Empfehlungen [12 Punkte]
+1. Matrix für Bewertung aller Filme durch element-weise Multiplikation der Matrix der Cosinus-
+Ähnlichkeiten von Nutzern und Filmen und “Negativabzug” der User-Items Matrix erzeugen.
+2. Dimension der Matrix für die Bewertung aller Filme prüfen.
+3. Top-20 Listen extrahieren und Länge der Listen pro Nutzer prüfen.
+4. Verteilung der minimalen Ähnlichkeit für Top-N Listen für N = 10, 20, 50, 100 für alle Nutzer visuell
+vergleichen.
+5. Top-20 Empfehlungen für Nutzer “5”, “25”, “50”, “150” visualisieren.
+6. Für Nutzer “133” und “555” Profil mit Top-N Empfehlungen für N = 20, 30, 40, 50 analysieren, visual-
+isieren und diskutieren.
+
+
+Hinweise:
+Bei Ausgabe der Top-20 Empfehlungen pro Nutzer wird empfohlen folgendermassen vorzugehen
+• Funktion get_topn_recos() implementieren, mit welcher sich pro User aus allen unbewerteten Filmen
+auf Basis der Ähnlichkeit von Nutzern und Filmen die Top-N Empfehlungen für beliebige N extrahieren
+lassen.
+
+Zur Prüfung der Länge der Top-20 Listen pro Nutzer ist die 5-Zahlen Statistik der Anzahl Empfehlungen pro
+Nutzer auszugegeben.
+Zur Bestimmung der Verteilung der minimalen Ähnlichkeit für Top-N Listen wird empfohlen folgendermassen
+vorzugehen:
+• Funktion analyze_topn_recos() implementieren, welche pro Nutzer und für verschiedene N jeweils
+den minimalen Ähnlichkeitsscore liefert. Verteilungen mit Hilfe von Histogrammen für verschiedene N
+visualisieren.
+• Die Funktion analyze_topn_recos() verwendet idealerweise die oben implementierte Funktion
+get_topn_recos() innerhalb eines Loops.
+
+Um Top-20 Empfehlungen mit Nutzerprofilen visuell zu evaluieren wird empfohlen folgendermassen
+vorzugehen:
+• Funktion create_cleveland_plot() zum visuellen Vergleich von Top-N Empfehlungen und Nutzer-
+profil pro User implementieren, indem Empfehlungen und Nutzerprofil im 19-dimensionalen Genre-
+Raum verglichen werden.
+• Die Funktion create_cleveland_plot() verwendet idealerweise die Funktion get_topn_recos().
