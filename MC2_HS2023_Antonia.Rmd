@@ -79,25 +79,6 @@ df_top30 <-df_genres_count %>%  slice_max(n = 30, order_by = count)
 df_rest <- df_genres_count %>%  filter(!(genre %in% df_top30$genre)) %>% summarise("count" = sum(count)) %>% mutate(genre = "Others combined")
 
 ggplot()+
-  geom_col(data = df_top30, aes(count, movie))+
-  geom_col(data = df_rest, aes(count, movie))
-
-
-df_top30 %>% 
-  rbind(df_rest) %>% 
-  ggplot(aes(count, reorder(genre, desc(genre)))) +
-  geom_col(data = . %>% filter(genre != "others combined")) +  # Regular bars
-  geom_col(data = . %>% filter(genre == "Others combined"), fill = "red")   # Highlighted 
-
-
-df_top30 %>% 
-  rbind(df_rest) %>% 
-  ggplot(aes(count, reorder(genre, desc(genre)))) +
-  geom_col(data = . %>% filter(genre != "others combined"), fill = "gray") +  # Regular bars
-  geom_col(data = . %>% filter(genre == "Others combined"), fill = "red")   # Highlighted 
-
-
-ggplot()+
   geom_col(data = df_top30, aes(count, genre))+
   geom_col(data = df_rest, aes(count, genre), fill = "red")+
   labs(y = "",
@@ -105,7 +86,20 @@ ggplot()+
        title = "Verteilung der Filme nach Genre-Kombination",
        subtitle = "(Top-30 Kombinaitonen, von insgesamt ...)")
 
+
+
 ```
+Wir sehen, dass Drama das häufigste Genre ist, gefolgt von Comedy. Comedy ist allgemein eine beliebte Kombination; gleich 5 der Top 30 Kombinationen enthalten Comedy (6 wenn man Comedy selber mitzählt). Beliebter ist nur noch Action, mit insgesamt 6 resp. 7 Kombinationen in den Top 30. Wenn wir noch zum Vergleich die Häufigkeit für die nicht kombinierten Genres anschauen (nächster Plot) sehen wir, dass sich die Kombinationen dort spiegeln: auch hier ist Drama, gefolgt von Comedy das häufigste Genre. 
+
+```{r Grafik Genres allg}
+
+df_genres_count2 <- rownames_to_column(as.data.frame(colSums(df_movie_genre[2:20])))
+colnames(df_genres_count2) <- c("genre", "count")
+ggplot(df_genres_count2, aes(count, genre))+
+  geom_col()
+
+```
+
 
 ```{r 7. Nutzerprofile im Genre-Vektorraum erzeugen}
 #Zur Erzeugung der Nutzerprofile im Genre-Vektorraum wird empfohlen folgendermassen vorzugehen: 
