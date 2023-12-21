@@ -38,21 +38,18 @@ df_user_ratings <- as.data.frame(as(MovieLense, "matrix"))
 ```
 
 ```{r 2. Binäre User-Liked-Items Matrix für alle Nutzer erzeugen}
-
-df_user_ratings[df_user_ratings > 3] <- 1
-df_user_ratings[df_user_ratings <= 3] <- 0
+df_binary <- ifelse(df_user_ratings >3 ,1,0)
 
 ```
 
 
 ```{r 3. Dimension der User-Liked-Items Matrix prüfen und ausgeben}
-print(dim(df_user_ratings))
+print(dim(df_binary))
 ```
 
 
 ```{r 4. Movie-Genre Matrix für alle Filme erzeugen}
 m_movie_genre <- MovieLenseMeta
-
 
 ```
 
@@ -63,6 +60,8 @@ dim(m_movie_genre)
 
 
 ```{r 6. Anzahl unterschiedlicher Filmprofile bestimmen und visualisieren}
+
+m_movie_genre %>% mutate(movieprofile = paste(across()))
 
 
 
