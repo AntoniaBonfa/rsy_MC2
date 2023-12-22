@@ -50,7 +50,9 @@ Die Matrix enthält `r toString(dim(df_binary)[1])` User und `r toString(dim(df_
 
 ```{r 4. Movie-Genre Matrix für alle Filme erzeugen}
 df_movie_genre <- as.data.frame(MovieLenseMeta)
-df_movie_genre <- df_movie_genre %>% select(-c("year", "url"))
+rownames(df_movie_genre) <- df_movie_genre$title
+df_movie_genre <- df_movie_genre %>% select(-c("year", "url", "title"))
+
 
 ```
 
@@ -105,8 +107,18 @@ ggplot(df_genres_count2, aes(count, genre))+
 #Zur Erzeugung der Nutzerprofile im Genre-Vektorraum wird empfohlen folgendermassen vorzugehen: 
 #• User-Genre-Profil Matrix durch Multiplikation von User-Liked-Items Matrix und Movie-Genre Matrix erzeugen.
 
+as(df_movie_genre, "matrix")["movie_profile"] %*% as(df_user_ratings, "matrix")
+
+#movie - Filmprofil Matrix
+movie_profiles <- rownames_to_column(df_movie_genre, "movie") %>% 
+  select(movie, movie_profile) %>% 
+  mutate(value = 1) %>%
+  pivot_wider(id_cols = movie,names_from = movie_profile, values_from = value)
 
 
+as(df_movie_genre["movie_profile"], "matrix")
+
+pivot_wider(df_movie_genre$movie_profile)
 
 ```
 
@@ -133,7 +145,10 @@ ggplot(df_genres_count2, aes(count, genre))+
 ```
 
 
-2. Dimension der Matrix der Cosinus-Ähnlichkeiten von Nutzern und Filmen prüfen uns ausgeben.
+```{r 2. Dimension der Matrix der Cosinus-Ähnlichkeiten von Nutzern und Filmen prüfen uns ausgeben.}
+
+```
+
 3. 5-Zahlen Statistik für Matrix der Cosinus-Ähnlichkeiten prüfen uns ausgeben.
 4. Cosinus-Ähnlichkeiten von Nutzern und Filmen mit Dichteplot visualisieren.
 5. Cosinus-Ähnlichkeiten von Nutzern und Filmen mit Dichteplot für Nutzer “241”, “414”, “477”, “526”,
