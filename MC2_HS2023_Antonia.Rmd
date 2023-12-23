@@ -86,7 +86,7 @@ ggplot()+
   labs(y = "",
        x = "Anzahl Filme",
        title = "Verteilung der Filme nach Genre-Kombination",
-       subtitle = "(Top-30 Kombinaitonen, von insgesamt ...)")
+       subtitle = paste0("(Top-30 Kombinationen, von insgesamt ", toString(dim(df_genres_count)[1]), ")"))
 
 
 
@@ -95,7 +95,7 @@ Wir sehen, dass Drama das häufigste Genre ist, gefolgt von Comedy. Comedy ist a
 
 ```{r Grafik Genres allg}
 
-df_genres_count2 <- rownames_to_column(as.data.frame(colSums(df_movie_genre[2:20])))
+df_genres_count2 <- rownames_to_column(as.data.frame(colSums(df_movie_genre[2:19])))
 colnames(df_genres_count2) <- c("genre", "count")
 ggplot(df_genres_count2, aes(count, genre))+
   geom_col()
@@ -107,19 +107,31 @@ ggplot(df_genres_count2, aes(count, genre))+
 #Zur Erzeugung der Nutzerprofile im Genre-Vektorraum wird empfohlen folgendermassen vorzugehen: 
 #• User-Genre-Profil Matrix durch Multiplikation von User-Liked-Items Matrix und Movie-Genre Matrix erzeugen.
 
-as(df_movie_genre, "matrix")["movie_profile"] %*% as(df_user_ratings, "matrix")
+#as(df_movie_genre, "matrix")["movie_profile"] %*% as(df_user_ratings, "matrix")
 
 #movie - Filmprofil Matrix
 movie_profiles <- rownames_to_column(df_movie_genre, "movie") %>% 
   select(movie, movie_profile) %>% 
   mutate(value = 1) %>%
-  pivot_wider(id_cols = movie,names_from = movie_profile, values_from = value)
+  pivot_wider(id_cols = movie,names_from = movie_profile, values_from = value, values_fill = 0) %>% 
+  column_to_rownames(var = "movie")
+
+m_movie_profiles <- as(movie_profiles, "matrix")
+m_user_ratings <- as(df_user_ratings, "matrix")
+m_user_ratings0 <- 
+
+m_user_genre <- m_user_ratings %*% m_movie_profiles 
 
 
-as(df_movie_genre["movie_profile"], "matrix")
+counts <- rownames_to_column(as.data.frame(colSums(m_user_genre)))
 
-pivot_wider(df_movie_genre$movie_profile)
+```
 
+
+```{r}
+dim(m_movie_profiles)
+dim(m_user_ratings)
+cols <- as.data.frame(colnames(movie_profiles))
 ```
 
 ```{r 8. Dimension der User-Genre-Profil Matrix prüfen und ausgeben}
@@ -132,8 +144,7 @@ pivot_wider(df_movie_genre$movie_profile)
 
 
 #(b) binär 
-#Zur Analyse der Anzahl unterschiedlicher Nutzer-Profile, Fall (b) kann z.B. mutate(across(.cols =
-#everything(), .fns = ~ ifelse(.x > 0, 1, 0))) verwendet werde
+#Zur Analyse der Anzahl unterschiedlicher Nutzer-Profile, Fall (b) kann z.B. mutate(across(.cols = everything(), .fns = ~ ifelse(.x > 0, 1, 0))) verwendet werde
 
 
 ```
@@ -141,6 +152,14 @@ pivot_wider(df_movie_genre$movie_profile)
 
 7.2 Ähnlichkeit von Nutzern und Filmen [10 Punkte]
 ```{r 1. Cosinus-Ähnlichkeit zwischen User-Genre- und Movie-Genre-Matrix berechnen}
+#• Funktion zur Berechnung von Cosinus-Ähnlichkeiten zweier Matrizen namens calc_cos_similarity_twomtrx() implementieren, um Nutzerprofile und Filme im Vektorraum der Genres zu vergleichen. Die richtige Funktionsweise soll an einem einfachen Beispiel getestet und dokumentiert werden.
+calc_cos_similarity_twomx <- function(m1, m2){
+  numerator <- (m1 %*% m2)
+  denominator <- sqrt(sum(m1^2))*sqrt(sum(m2^2)) 
+  cos_sim <- numerator / denominator
+  return(cos_sim)
+  } 
+
 
 ```
 
@@ -158,9 +177,7 @@ pivot_wider(df_movie_genre$movie_profile)
 
 Zur Berechnung der Cosinus-Ähnlichkeit von Nutzern und Filmen wird empfohlen folgendermassen vorzuge-
 hen:
-• Funktion zur Berechnung von Cosinus-Ähnlichkeiten zweier Matrizen namens calc_cos_similarity_twomtrx()
-implementieren, um Nutzerprofile und Filme im Vektorraum der Genres zu vergleichen. Die richtige
-Funktionsweise soll an einem einfachen Beispiel getestet und dokumentiert werden.
+
 Bei der Berechnung der 5-Zahlen Statistik der Cosinus-Ähnlichkeiten von Nutzern und Filmen sind explizit
 auch NAs und Mittelwert auszugeben.
 
