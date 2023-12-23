@@ -116,27 +116,24 @@ movie_profiles <- rownames_to_column(df_movie_genre, "movie") %>%
   pivot_wider(id_cols = movie,names_from = movie_profile, values_from = value, values_fill = 0) %>% 
   column_to_rownames(var = "movie")
 
+#Dataframes in Matrizen umwandeln
 m_movie_profiles <- as(movie_profiles, "matrix")
 m_user_ratings <- as(df_user_ratings, "matrix")
-m_user_ratings0 <- 
+m_user_ratings[is.na(m_user_ratings)] <- 0
 
+
+  
+#Matrixmultiplikation 
 m_user_genre <- m_user_ratings %*% m_movie_profiles 
 
 
-counts <- rownames_to_column(as.data.frame(colSums(m_user_genre)))
-
 ```
 
-
-```{r}
-dim(m_movie_profiles)
-dim(m_user_ratings)
-cols <- as.data.frame(colnames(movie_profiles))
-```
 
 ```{r 8. Dimension der User-Genre-Profil Matrix prüfen und ausgeben}
-
+dim(m_user_genre)
 ```
+Nach der Matrixmultiplikation haben wir weiterhin `r toString(dim(m_user_genre)[1])` User  und `r toString(dim(m_user_genre)[2])` Genre-Profile. Die Multiplikation scheint also korrekt verlaufen zu sein.   
 
 
 ```{r 9. Anzahl unterschiedlicher Nutzerprofile bestimmen mit Stärke der Genre-Kombination}
