@@ -135,7 +135,7 @@ dim(m_user_genre)
 ```
 Nach der Matrixmultiplikation haben wir weiterhin `r toString(dim(m_user_genre)[1])` User  und `r toString(dim(m_user_genre)[2])` Genre-Profile. Die Multiplikation scheint also korrekt verlaufen zu sein.   
 
-
+##STILL TO DO
 ```{r 9. Anzahl unterschiedlicher Nutzerprofile bestimmen mit Stärke der Genre-Kombination}
 #(a) vollständig
 
@@ -147,7 +147,7 @@ Nach der Matrixmultiplikation haben wir weiterhin `r toString(dim(m_user_genre)[
 ```
 
 
-7.2 Ähnlichkeit von Nutzern und Filmen [10 Punkte]
+### 7.2 Ähnlichkeit von Nutzern und Filmen [10 Punkte]
 ```{r 1. Cosinus-Ähnlichkeit zwischen User-Genre- und Movie-Genre-Matrix berechnen}
 #• Funktion zur Berechnung von Cosinus-Ähnlichkeiten zweier Matrizen namens calc_cos_similarity_twomtrx() implementieren, um Nutzerprofile und Filme im Vektorraum der Genres zu vergleichen. Die richtige Funktionsweise soll an einem einfachen Beispiel getestet und dokumentiert werden.
 calc_cos_similarity_twomx <- function(m1, m2){
@@ -160,71 +160,127 @@ calc_cos_similarity_twomx <- function(m1, m2){
 
 ```
 
+##STILL TO DO FUNKTIONSTEST
+```{r Test Funktion}
+m1 <- matrix(1:4, nrow = 2, ncol = 2)
+m2 <- matrix(1:6, nrow = 2, ncol = 3)
+print(m1)
+print(m2)
 
-```{r 2. Dimension der Matrix der Cosinus-Ähnlichkeiten von Nutzern und Filmen prüfen uns ausgeben.}
+calc_cos_similarity_twomx(m1,m2)
+
+
 
 ```
 
-3. 5-Zahlen Statistik für Matrix der Cosinus-Ähnlichkeiten prüfen uns ausgeben.
-4. Cosinus-Ähnlichkeiten von Nutzern und Filmen mit Dichteplot visualisieren.
-5. Cosinus-Ähnlichkeiten von Nutzern und Filmen mit Dichteplot für Nutzer “241”, “414”, “477”, “526”,
-“640” und “710” visualisieren.
+
+```{r 2. Dimension der Matrix der Cosinus-Ähnlichkeiten von Nutzern und Filmen prüfen uns ausgeben.}
+m_csim_user_movie <- calc_cos_similarity_twomx(m_user_genre, t(m_movie_profiles))
+
+dim(m_csim_user_movie)
+
+```
+```{r 3. 5-Zahlen Statistik für Matrix der Cosinus-Ähnlichkeiten prüfen uns ausgeben}
+#Bei der Berechnung der 5-Zahlen Statistik der Cosinus-Ähnlichkeiten von Nutzern und Filmen sind explizit auch NAs und Mittelwert auszugeben.
+
+stat5point <- as.data.frame(t(quantile(m_csim_user_movie,na.rm = TRUE))) %>% 
+  mutate(mean = mean(m_csim_user_movie, na.rm=TRUE), 
+         NAs = sum(is.na(m_csim_user_movie)))
+colnames(stats) <- c("Min", "first Qu", "Median", "third Qu", "Max", "Mean", "NAs")
+stats
+
+stat5point <- quantile(m_csim_user_movie, na.rm = TRUE)
+means <- mean(m_csim_user_movie, na.rm = TRUE)
+NAs <- sum(is.na(m_csim_user_movie))
+
+stat5point
 
 
-
-Zur Berechnung der Cosinus-Ähnlichkeit von Nutzern und Filmen wird empfohlen folgendermassen vorzuge-
-hen:
-
-Bei der Berechnung der 5-Zahlen Statistik der Cosinus-Ähnlichkeiten von Nutzern und Filmen sind explizit
-auch NAs und Mittelwert auszugeben.
+```
 
 
+```{r 4. Cosinus-Ähnlichkeiten von Nutzern und Filmen mit Dichteplot visualisieren.}
 
-7.3 Empfehlbare Filme [6 Punkte]
-1. Bewertete Filme maskieren, d.h. “Negativabzug” der User-Items Matrix erzeugen, um anschliessend
-Empfehlungen herzuleiten.
-2. Zeilensumme des “Negativabzuges” der User-Items Matrix für die User “5”, “25”, “50” und “150” aus-
-geben.
+
+df_csim_long <- rownames_to_column(as.data.frame(m_csim_user_movie), "user") %>% 
+  pivot_longer(!user, names_to = "movie", values_to = "value")
+
+ggplot(df_csim_long, aes(value))+
+  geom_density()
+
+```
+
+```{r 5. Cosinus-Ähnlichkeiten von Nutzern und Filmen mit Dichteplot für Nutzer “241”, “414”, “477”, “526”,“640” und “710” visualisieren.}
+
+```
+
+
+### 7.3 Empfehlbare Filme [6 Punkte]
+1. Bewertete Filme maskieren, d.h. “Negativabzug” der User-Items Matrix erzeugen, um anschliessend Empfehlungen herzuleiten.
+```{r}
+#Zum Maskieren bewerteter Filme (s. “Negativabzug”) wird empfohlen folgendermassen vorzugehen:
+#“Negativabzug” der User-Liked-Items Matrix konstruieren, indem Ratings aller bewerteten Filme auf 0 gesetzt werden, die restlichen auf 1
+
+
+```
+
+2. Zeilensumme des “Negativabzuges” der User-Items Matrix für die User “5”, “25”, “50” und “150” ausgeben.
+```{r}
+
+```
+
 3. 5-Zahlen Statistik der Zeilensumme des “Negativabzuges” der User-Items Matrix bestimmen.
-Hinweise:
-Zum Maskieren bewerteter Filme (s. “Negativabzug”) wird empfohlen folgendermassen vorzugehen:
-• “Negativabzug” der User-Liked-Items Matrix konstruieren, indem Ratings aller bewerteten Filme auf 0
-gesetzt werden, die restlichen auf 1.
+```{r}
 
+```
 
+### 7.4 Top-N Empfehlungen [12 Punkte]
+1. Matrix für Bewertung aller Filme durch element-weise Multiplikation der Matrix der Cosinus-Ähnlichkeiten von Nutzern und Filmen und “Negativabzug” der User-Items Matrix erzeugen.
+```{r}
 
+```
 
-7.4 Top-N Empfehlungen [12 Punkte]
-1. Matrix für Bewertung aller Filme durch element-weise Multiplikation der Matrix der Cosinus-
-Ähnlichkeiten von Nutzern und Filmen und “Negativabzug” der User-Items Matrix erzeugen.
 2. Dimension der Matrix für die Bewertung aller Filme prüfen.
+```{r}
+
+```
+
 3. Top-20 Listen extrahieren und Länge der Listen pro Nutzer prüfen.
-4. Verteilung der minimalen Ähnlichkeit für Top-N Listen für N = 10, 20, 50, 100 für alle Nutzer visuell
-vergleichen.
+```{r}
+#Bei Ausgabe der Top-20 Empfehlungen pro Nutzer wird empfohlen folgendermassen vorzugehen
+#Funktion get_topn_recos() implementieren, mit welcher sich pro User aus allen unbewerteten Filmen auf Basis der Ähnlichkeit von Nutzern und Filmen die Top-N Empfehlungen für beliebige N extrahieren lassen.
+#Zur Prüfung der Länge der Top-20 Listen pro Nutzer ist die 5-Zahlen Statistik der Anzahl Empfehlungen pro Nutzer auszugegeben.
+get_topn_recos <- function(df, user, N = 20){}
+
+
+```
+
+4. Verteilung der minimalen Ähnlichkeit für Top-N Listen für N = 10, 20, 50, 100 für alle Nutzer visuell vergleichen.
+```{r}
+# Zur Bestimmung der Verteilung der minimalen Ähnlichkeit für Top-N Listen wird empfohlen folgendermassen vorzugehen:
+# Funktion analyze_topn_recos() implementieren, welche pro Nutzer und für verschiedene N jeweils den minimalen Ähnlichkeitsscore liefert. Verteilungen mit Hilfe von Histogrammen für verschiedene N visualisieren.
+# Die Funktion analyze_topn_recos() verwendet idealerweise die oben implementierte Funktion get_topn_recos() innerhalb eines Loops.
+
+
+analyze_topn_recos <- function(df, user, N){}
+
+
+```
+
 5. Top-20 Empfehlungen für Nutzer “5”, “25”, “50”, “150” visualisieren.
-6. Für Nutzer “133” und “555” Profil mit Top-N Empfehlungen für N = 20, 30, 40, 50 analysieren, visual-
-isieren und diskutieren.
+```{r}
+# Funktion create_cleveland_plot() zum visuellen Vergleich von Top-N Empfehlungen und Nutzerprofil pro User implementieren, indem Empfehlungen und Nutzerprofil im 19-dimensionalen Genre-Raum verglichen werden.
+# Die Funktion create_cleveland_plot() verwendet idealerweise die Funktion get_topn_recos().
+
+create_cleveland_plot <- function(){
+  
+}
 
 
-Hinweise:
-Bei Ausgabe der Top-20 Empfehlungen pro Nutzer wird empfohlen folgendermassen vorzugehen
-• Funktion get_topn_recos() implementieren, mit welcher sich pro User aus allen unbewerteten Filmen
-auf Basis der Ähnlichkeit von Nutzern und Filmen die Top-N Empfehlungen für beliebige N extrahieren
-lassen.
 
-Zur Prüfung der Länge der Top-20 Listen pro Nutzer ist die 5-Zahlen Statistik der Anzahl Empfehlungen pro
-Nutzer auszugegeben.
-Zur Bestimmung der Verteilung der minimalen Ähnlichkeit für Top-N Listen wird empfohlen folgendermassen
-vorzugehen:
-• Funktion analyze_topn_recos() implementieren, welche pro Nutzer und für verschiedene N jeweils
-den minimalen Ähnlichkeitsscore liefert. Verteilungen mit Hilfe von Histogrammen für verschiedene N
-visualisieren.
-• Die Funktion analyze_topn_recos() verwendet idealerweise die oben implementierte Funktion
-get_topn_recos() innerhalb eines Loops.
+```
 
-Um Top-20 Empfehlungen mit Nutzerprofilen visuell zu evaluieren wird empfohlen folgendermassen
-vorzugehen:
-• Funktion create_cleveland_plot() zum visuellen Vergleich von Top-N Empfehlungen und Nutzer-
-profil pro User implementieren, indem Empfehlungen und Nutzerprofil im 19-dimensionalen Genre-
-Raum verglichen werden.
-• Die Funktion create_cleveland_plot() verwendet idealerweise die Funktion get_topn_recos().
+6. Für Nutzer “133” und “555” Profil mit Top-N Empfehlungen für N = 20, 30, 40, 50 analysieren, visualisieren und diskutieren.
+```{r}
+
+```
