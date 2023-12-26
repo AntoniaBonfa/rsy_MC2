@@ -186,12 +186,7 @@ dim(m_csim_user_movie)
 stat5point <- as.data.frame(t(quantile(m_csim_user_movie,na.rm = TRUE))) %>% 
   mutate(mean = mean(m_csim_user_movie, na.rm=TRUE), 
          NAs = sum(is.na(m_csim_user_movie)))
-colnames(stats) <- c("Min", "first Qu", "Median", "third Qu", "Max", "Mean", "NAs")
-stats
-
-stat5point <- quantile(m_csim_user_movie, na.rm = TRUE)
-means <- mean(m_csim_user_movie, na.rm = TRUE)
-NAs <- sum(is.na(m_csim_user_movie))
+colnames(stats) <- c("Min", "25%", "Median", "75%", "Max", "Mean", "NAs")
 
 stat5point
 
@@ -206,11 +201,19 @@ df_csim_long <- rownames_to_column(as.data.frame(m_csim_user_movie), "user") %>%
   pivot_longer(!user, names_to = "movie", values_to = "value")
 
 ggplot(df_csim_long, aes(value))+
-  geom_density()
+  geom_density()+
+  labs(title = "Dichteplot von Cosinus-Ähnlichkeit",
+       x = "Cosinus-Ähnlichkeit",
+       y = "Dichte")
 
 ```
 
 ```{r 5. Cosinus-Ähnlichkeiten von Nutzern und Filmen mit Dichteplot für Nutzer “241”, “414”, “477”, “526”,“640” und “710” visualisieren.}
+userlist <- c(241, 414, 477, 526, 640, 710)
+
+df_csim_long %>% filter(user %in% userlist) %>% 
+  ggplot(aes(value, color = user))+
+  geom_density()
 
 ```
 
