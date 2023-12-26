@@ -65,8 +65,7 @@ Die Matrix enthält `r toString(dim(df_movie_genre)[1])` Filme und `r toString(d
 
 
 ```{r 6. Anzahl unterschiedlicher Filmprofile bestimmen und visualisieren}
-#ChatGPT genutzt für den Code. Prompt: I am working with the MovieLense dataframe and I need to modify the MovieLenseMeta dataframe to have an additional column with the combination of genres. so if a movie has "Action" and "Adventure" as their genres, the column should have "Action-Adventure" as value. can you help me write this code?
-#Originalcode noch angepasst (ChatGPT wollte für die Genres einen Vektor schreiben mit den expliziten Genre-Namen. Da aber die Titel Spalte keine 1er enthält habe ich es weggelelassen)
+#ChatGPT genutzt für den Code. Prompt: I am working with the MovieLense dataframe and I need to modify the MovieLenseMeta dataframe to have an additional column with the combination of genres. So if a movie has "Action" and "Adventure" as their genres, the column should have "Action-Adventure" as value. can you help me write this code? Resultat davon ist der Code für die Spalte "movie_profiles". Im Original wollte ChatGPT für die Genres einen Vektor schreiben mit den expliziten Genre-Namen und die Funktion nur auf diese Spalten anwenden. Da das aber ohnehin alle Spalten sind war das ein unnötiger Mehraufwand.
 
 
 df_movie_genre$movie_profile <- apply(df_movie_genre, 1, function(row) {
@@ -87,7 +86,6 @@ ggplot()+
        x = "Anzahl Filme",
        title = "Verteilung der Filme nach Genre-Kombination",
        subtitle = paste0("(Top-30 Kombinationen, von insgesamt ", toString(dim(df_genres_count)[1]), ")"))
-
 
 
 ```
@@ -183,12 +181,15 @@ dim(m_csim_user_movie)
 ```{r 3. 5-Zahlen Statistik für Matrix der Cosinus-Ähnlichkeiten prüfen uns ausgeben}
 #Bei der Berechnung der 5-Zahlen Statistik der Cosinus-Ähnlichkeiten von Nutzern und Filmen sind explizit auch NAs und Mittelwert auszugeben.
 
-stat5point <- as.data.frame(t(quantile(m_csim_user_movie,na.rm = TRUE))) %>% 
-  mutate(mean = mean(m_csim_user_movie, na.rm=TRUE), 
-         NAs = sum(is.na(m_csim_user_movie)))
-colnames(stats) <- c("Min", "25%", "Median", "75%", "Max", "Mean", "NAs")
+stat5point <- function(df){
+  stat5point <- as.data.frame(t(quantile(df,na.rm = TRUE))) %>% 
+  mutate(mean = mean(df, na.rm=TRUE), 
+         NAs = sum(is.na(df)))
+  colnames(stat5point) <- c("Min", "25%", "Median", "75%", "Max", "Mean", "NAs")
+  return(stat5point)
+}
 
-stat5point
+stat5point(m_csim_user_movie)
 
 
 ```
@@ -223,12 +224,21 @@ df_csim_long %>% filter(user %in% userlist) %>%
 ```{r}
 #Zum Maskieren bewerteter Filme (s. “Negativabzug”) wird empfohlen folgendermassen vorzugehen:
 #“Negativabzug” der User-Liked-Items Matrix konstruieren, indem Ratings aller bewerteten Filme auf 0 gesetzt werden, die restlichen auf 1
+df_neg <- df_user_ratings %>% 
+  modify(~ ifelse(is.na(.), 1, 0))
+
+#prüfen, ob Anzahl NAs im ursprünglichen Dataframe der Anzahl 1er entspricht im Negativabzug
+sum(is.na(df_user_ratings)) - sum(df_neg == 1)
 
 
 ```
 
 2. Zeilensumme des “Negativabzuges” der User-Items Matrix für die User “5”, “25”, “50” und “150” ausgeben.
 ```{r}
+userlist <- c(5,25,50,150)
+
+subset(df_neg, row_number %in% userlist)
+
 
 ```
 
