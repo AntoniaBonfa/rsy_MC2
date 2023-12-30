@@ -124,7 +124,7 @@ m_user_ratings[is.na(m_user_ratings)] <- 0
 #Matrixmultiplikation 
 m_user_genre <- m_user_ratings %*% m_movie_profiles 
 
-
+head(m_user_genre)
 ```
 
 
@@ -149,31 +149,28 @@ Nach der Matrixmultiplikation haben wir weiterhin `r toString(dim(m_user_genre)[
 ```{r 1. Cosinus-Ähnlichkeit zwischen User-Genre- und Movie-Genre-Matrix berechnen}
 #• Funktion zur Berechnung von Cosinus-Ähnlichkeiten zweier Matrizen namens calc_cos_similarity_twomtrx() implementieren, um Nutzerprofile und Filme im Vektorraum der Genres zu vergleichen. Die richtige Funktionsweise soll an einem einfachen Beispiel getestet und dokumentiert werden.
 calc_cos_similarity_twomx <- function(m1, m2){
-  numerator <- (m1 %*% m2)
-  denominator <- sqrt(sum(m1^2))*sqrt(sum(m2^2)) 
+  numerator <- (m1 %*% t(m2))
+  denominator <- sqrt(rowSums(m1^2) %*% t(rowSums(m2^2)))
   cos_sim <- numerator / denominator
   return(cos_sim)
   } 
-
-
 ```
+
 
 ##STILL TO DO FUNKTIONSTEST
 ```{r Test Funktion}
 m1 <- matrix(1:4, nrow = 2, ncol = 2)
-m2 <- matrix(1:6, nrow = 2, ncol = 3)
+m2 <- matrix(1:6, nrow = 2, ncol = 2)
 print(m1)
 print(m2)
 
 calc_cos_similarity_twomx(m1,m2)
 
-
-
 ```
 
 
 ```{r 2. Dimension der Matrix der Cosinus-Ähnlichkeiten von Nutzern und Filmen prüfen uns ausgeben.}
-m_csim_user_movie <- calc_cos_similarity_twomx(m_user_genre, t(m_movie_profiles))
+m_csim_user_movie <- calc_cos_similarity_twomx(m_user_genre, m_movie_profiles)
 
 dim(m_csim_user_movie)
 
@@ -227,7 +224,7 @@ df_csim_long %>% filter(user %in% userlist) %>%
 df_neg <- df_user_ratings %>% 
   modify(~ ifelse(is.na(.), 1, 0))
 
-#prüfen, ob Anzahl NAs im ursprünglichen Dataframe der Anzahl 1er entspricht im Negativabzug
+#prüfen, ob Anzahl NAs im ursprünglichen Dataframe der Anzahl 1er entspricht im Negativabzug (sollte 0 ergeben)
 sum(is.na(df_user_ratings)) - sum(df_neg == 1)
 
 
@@ -237,11 +234,15 @@ sum(is.na(df_user_ratings)) - sum(df_neg == 1)
 ```{r}
 users_neg <- c(5,25,50,150)
 df_neg_rowsum <- as.data.frame(rowSums(df_neg[users_neg,])) %>%
-  `colnames<-`("count") %>% 
-  rownames_to_column("user")
+  `colnames<-`("Anzahl") %>% 
+  rownames_to_column("User") %>% 
+  arrange(Anzahl)
 
-ggplot((df_neg_rowsum), aes(user, count))+
-  geom_col()
+print(df_neg_rowsum)
+
+ggplot((df_neg_rowsum), aes(User, Anzahl, fill = User))+
+  geom_col()+
+  labs(title = "Anzahl Zeilen in Negativmatrix")
 
 ```
 
@@ -313,13 +314,20 @@ analyze_topn_recos <- function(df, user, N){
 # Funktion create_cleveland_plot() zum visuellen Vergleich von Top-N Empfehlungen und Nutzerprofil pro User implementieren, indem Empfehlungen und Nutzerprofil im 19-dimensionalen Genre-Raum verglichen werden.
 # Die Funktion create_cleveland_plot() verwendet idealerweise die Funktion get_topn_recos().
 
-create_cleveland_plot <- function(){
+create_cleveland_plot <- function(df){
+  
   df <- get_topn_recos()
   ggplot(df, aes(genre, pct))+
     geom_line()+
     geom_point()
   
 }
+
+df_top20 %>% 
+  group_by(user) %>% 
+  summarize(max = max(value),
+         min = min(value)) %>% 
+  ggplot(aes())
 
 
 
