@@ -106,7 +106,7 @@ ggplot(df_genres_count2, aes(count, genre))+
 
 ```{r 7. Nutzerprofile im Genre-Vektorraum erzeugen}
 #Zur Erzeugung der Nutzerprofile im Genre-Vektorraum wird empfohlen folgendermassen vorzugehen: 
-#• User-Genre-Profil Matrix durch Multiplikation von User-Liked-Items Matrix und Movie-Genre Matrix erzeugen.
+#User-Genre-Profil Matrix durch Multiplikation von User-Liked-Items Matrix und Movie-Genre Matrix erzeugen.
 
 #as(df_movie_genre, "matrix")["movie_profile"] %*% as(df_user_ratings, "matrix")
 
@@ -139,11 +139,24 @@ Nach der Matrixmultiplikation haben wir weiterhin `r toString(dim(m_user_genre)[
 ##STILL TO DO
 ```{r 9. Anzahl unterschiedlicher Nutzerprofile bestimmen mit Stärke der Genre-Kombination}
 #(a) vollständig
+rownames_to_column(as.data.frame(m_user_genre), "user") %>% 
+  pivot_longer(!user, names_to = "movie", values_to = "value") %>% 
+  filter(value > 0) %>% 
+  distinct(movie)
 
 
 #(b) binär 
 #Zur Analyse der Anzahl unterschiedlicher Nutzer-Profile, Fall (b) kann z.B. mutate(across(.cols = everything(), .fns = ~ ifelse(.x > 0, 1, 0))) verwendet werde
+df_binary[is.na(df_binary)] <- 0
+m_user_genre2 <- as(df_binary, "matrix") %*% m_movie_profiles 
 
+rownames_to_column(as.data.frame(m_user_genre2), "user") %>% 
+  pivot_longer(!user, names_to = "movie", values_to = "value") %>% 
+  filter(value > 0) %>% 
+  distinct(movie)
+
+
+dim(m_user_genre2)
 
 ```
 
@@ -284,31 +297,46 @@ dim(m_neg_csim)
 #Bei Ausgabe der Top-20 Empfehlungen pro Nutzer wird empfohlen folgendermassen vorzugehen
 #Funktion get_topn_recos() implementieren, mit welcher sich pro User aus allen unbewerteten Filmen auf Basis der Ähnlichkeit von Nutzern und Filmen die Top-N Empfehlungen für beliebige N extrahieren lassen.
 #Zur Prüfung der Länge der Top-20 Listen pro Nutzer ist die 5-Zahlen Statistik der Anzahl Empfehlungen pro Nutzer auszugegeben.
-get_topn_recos <- function(df, N = 20){
-  
+get_topn_recos <- function(df,N=20){
   df_topN <- rownames_to_column(as.data.frame(df), "user") %>% 
     pivot_longer(!user, names_to = "movie", values_to = "value") %>% 
-    arrange(desc(value)) %>% 
-    group_by(user) %>% 
-    slice(1:N)
-    
-  stats <- quantile(df_topN)
-  return(list(df_topN, stats))
+    arrange(user,desc(value)) %>% 
+    mutate(rank = rep(1:ncol(df), nrow(df))) %>% 
+    filter(rank <= N)
+
+  return(df_topN)
 }
 
-df_top20 <- get_topn_recos(m_neg_csim)$df_topN
+df_top20 <- get_topn_recos(m_neg_csim, 50)
 #get_topn_recos(m_neg_csim)$stats
 ```
-```{r debugging topn}
-df_topN <- rownames_to_column(as.data.frame(m_neg_csim), "user") %>% 
-  pivot_longer(!user, names_to = "movie", values_to = "value") %>% 
-  group_by(user) %>% 
-  arrange(desc(value)) %>% 
-  slice(1:20)
 
+```{r debugging}
+    dim1 = dim(matrix)[1]
+    dim2 = dim(matrix)[2]
+    matrix_melt <- reshape2::melt(t(matrix)) %>% 
+      rename(UserID = Var2, movie = Var1, cos_sim = value) 
+dim1 = dim(m_neg_csim)[1]
+dim2 = dim(m_neg_csim)[2]
+    
+
+
+
+
+    # matrix_melt is a long dataframe, with 3 columns: userID,movie,cos_sim
+    Top <- matrix_melt  %>% 
+      arrange(UserID,desc(cos_sim)) %>%  # sort by userID and cosine similarity 
+      mutate(rank = rep(1:nrow(),dim1)) %>%  # generate new column "rank", For each user, the rank will start from 1.
+      filter(rank <= n) %>%    # keep only the first n ranks for each user
+      reshape2::dcast(UserID ~ rank, value.var = "movie") # reshape the dataframe,userID as row, rank as column, movie as values
+    rownames(Top) <- Top$UserID # set rownames same as UserID column
+    Top <- Top %>% select(-UserID) # drop the column UserID
+    colnames(Top) <- c(paste0("Top_", 1:n)) # change the column name as Top_1, Top_2, .... 
+    return(Top)
 
 
 ```
+
 
 4. Verteilung der minimalen Ähnlichkeit für Top-N Listen für N = 10, 20, 50, 100 für alle Nutzer visuell vergleichen.
 ```{r}
@@ -317,7 +345,10 @@ df_topN <- rownames_to_column(as.data.frame(m_neg_csim), "user") %>%
 # Die Funktion analyze_topn_recos() verwendet idealerweise die oben implementierte Funktion get_topn_recos() innerhalb eines Loops.
 
 
-analyze_topn_recos <- function(df, user, N){
+analyze_topn_recos <- function(df, users, N){
+  for (user in users){
+    recs <- get_topn_recos(df, user, N)
+  }
   
 }
   
