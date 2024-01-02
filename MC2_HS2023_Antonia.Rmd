@@ -311,31 +311,6 @@ df_top20 <- get_topn_recos(m_neg_csim, 50)
 #get_topn_recos(m_neg_csim)$stats
 ```
 
-```{r debugging}
-    dim1 = dim(matrix)[1]
-    dim2 = dim(matrix)[2]
-    matrix_melt <- reshape2::melt(t(matrix)) %>% 
-      rename(UserID = Var2, movie = Var1, cos_sim = value) 
-dim1 = dim(m_neg_csim)[1]
-dim2 = dim(m_neg_csim)[2]
-    
-
-
-
-
-    # matrix_melt is a long dataframe, with 3 columns: userID,movie,cos_sim
-    Top <- matrix_melt  %>% 
-      arrange(UserID,desc(cos_sim)) %>%  # sort by userID and cosine similarity 
-      mutate(rank = rep(1:nrow(),dim1)) %>%  # generate new column "rank", For each user, the rank will start from 1.
-      filter(rank <= n) %>%    # keep only the first n ranks for each user
-      reshape2::dcast(UserID ~ rank, value.var = "movie") # reshape the dataframe,userID as row, rank as column, movie as values
-    rownames(Top) <- Top$UserID # set rownames same as UserID column
-    Top <- Top %>% select(-UserID) # drop the column UserID
-    colnames(Top) <- c(paste0("Top_", 1:n)) # change the column name as Top_1, Top_2, .... 
-    return(Top)
-
-
-```
 
 
 4. Verteilung der minimalen Ähnlichkeit für Top-N Listen für N = 10, 20, 50, 100 für alle Nutzer visuell vergleichen.
@@ -345,13 +320,52 @@ dim2 = dim(m_neg_csim)[2]
 # Die Funktion analyze_topn_recos() verwendet idealerweise die oben implementierte Funktion get_topn_recos() innerhalb eines Loops.
 
 
-analyze_topn_recos <- function(df, users, N){
-  for (user in users){
-    recs <- get_topn_recos(df, user, N)
-  }
+analyze_topn_recos <- function(df, Ns){
+  min_scores <- data.frame()
+  for (n in Ns){
+    recs <- get_topn_recos(df, n)
+    recs <- recs %>% 
+      group_by(user) %>% 
+      summarize(min_score = min(value),
+                N = n)
+    min_scores <- rbind(min_scores, recs)}
   
+  ggplot(min_scores, aes(min_score))+
+    geom_histogram(bins = 100)+
+    facet_wrap(~paste0("Top", N))+
+    labs(title = "Verteilung der minimalen Scores in den Toplisten",
+         x = "Cosine-Ähnlichkeit",
+         y = "Anzahl")
+    
+  
+  
+
+  #return(min_scores)
+
 }
-  
+
+Ns <- c(10, 20, 50, 100)
+analyze_topn_recos(m_neg_csim, Ns)
+```
+```{r debugging analyze}
+df <- m_neg_csim
+Ns <- c(10, 20, 50, 100)
+
+min_scores <- data.frame()
+
+  for (N in Ns){
+    recs <- get_topn_recos(df, N)
+    recs <- recs %>% 
+      group_by(user) %>% 
+      summarize(min_score = min(value), 
+                n = N)
+    min_scores <- rbind(min_scores, recs)
+      }
+
+ggplot(min_scores, aes(min_score))+
+  geom_histogram()+
+  facet_wrap(~n)
+
 
 ```
 
