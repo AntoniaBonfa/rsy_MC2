@@ -156,14 +156,29 @@ rownames_to_column(as.data.frame(m_user_genre2), "user") %>%
   distinct(movie)
 
 
-dim(m_user_genre2)
+
+
+
+m3 <- as.data.frame(m_user_genre) %>% mutate(across(.cols = everything(), .fns = ~ ifelse(.x > 0, 1, 0)))
+
+
+rownames_to_column(as.data.frame(m3), "user") %>% 
+  pivot_longer(!user, names_to = "movie", values_to = "value") %>% 
+  filter(value > 0) %>% 
+  distinct(movie)
+
+
+
+dim(distinct(m3))
+sum(unique(m3))
+dim(m3)
 
 ```
 
 
 ### 7.2 Ähnlichkeit von Nutzern und Filmen [10 Punkte]
 ```{r 1. Cosinus-Ähnlichkeit zwischen User-Genre- und Movie-Genre-Matrix berechnen}
-#• Funktion zur Berechnung von Cosinus-Ähnlichkeiten zweier Matrizen namens calc_cos_similarity_twomtrx() implementieren, um Nutzerprofile und Filme im Vektorraum der Genres zu vergleichen. Die richtige Funktionsweise soll an einem einfachen Beispiel getestet und dokumentiert werden.
+# Funktion zur Berechnung von Cosinus-Ähnlichkeiten zweier Matrizen namens calc_cos_similarity_twomtrx() implementieren, um Nutzerprofile und Filme im Vektorraum der Genres zu vergleichen. Die richtige Funktionsweise soll an einem einfachen Beispiel getestet und dokumentiert werden.
 calc_cos_similarity_twomx <- function(m1, m2){
   numerator <- (m1 %*% t(m2))
   denominator <- sqrt(rowSums(m1^2) %*% t(rowSums(m2^2)))
@@ -173,10 +188,10 @@ calc_cos_similarity_twomx <- function(m1, m2){
 ```
 
 
-##STILL TO DO FUNKTIONSTEST
+### Testen der Funktion anhand eines einfachen Beispiels
 ```{r Test Funktion}
 m1 <- matrix(1:4, nrow = 2, ncol = 2)
-m2 <- matrix(1:6, nrow = 2, ncol = 2)
+m2 <- matrix(1:4, nrow = 2, ncol = 2)
 print(m1)
 print(m2)
 
@@ -330,46 +345,61 @@ analyze_topn_recos <- function(df, Ns){
                 N = n)
     min_scores <- rbind(min_scores, recs)}
   
-  ggplot(min_scores, aes(min_score))+
+  min_scores <- min_scores %>% arrange(user, N)
+  
+  plot <- ggplot(min_scores, aes(min_score))+
     geom_histogram(bins = 100)+
     facet_wrap(~paste0("Top", N))+
     labs(title = "Verteilung der minimalen Scores in den Toplisten",
          x = "Cosine-Ähnlichkeit",
          y = "Anzahl")
     
-  
-  
-
-  #return(min_scores)
+  return(list(min_scores, plot))
 
 }
 
 Ns <- c(10, 20, 50, 100)
 analyze_topn_recos(m_neg_csim, Ns)
 ```
-```{r debugging analyze}
-df <- m_neg_csim
-Ns <- c(10, 20, 50, 100)
-
-min_scores <- data.frame()
-
-  for (N in Ns){
-    recs <- get_topn_recos(df, N)
-    recs <- recs %>% 
-      group_by(user) %>% 
-      summarize(min_score = min(value), 
-                n = N)
-    min_scores <- rbind(min_scores, recs)
-      }
-
-ggplot(min_scores, aes(min_score))+
-  geom_histogram()+
-  facet_wrap(~n)
+Im Histogram sehen wir dass bei zunehmendem N auch mehr tiefe Scores dabei sind. Dies können wir auch statistisch überprüfen mit den Quantilen:
+```{r Quantile der Verteilungen}
 
 
 ```
 
+
 5. Top-20 Empfehlungen für Nutzer “5”, “25”, “50”, “150” visualisieren.
+```{r vortest für cleveland}
+N <- 20
+df_top20 <- get_topn_recos(m_neg_csim, N)
+U <- 183
+#Top-Empfehlungen mit Filmprofil anreichern
+combined_df <- merge(df_top20, rownames_to_column(df_movie_genre['movie_profile'], "movie"), by="movie")
+
+combined_df %>% arrange(user, rank) %>% 
+  group_by(user) %>% 
+  filter(user == U) %>% 
+  count(movie_profile) %>% 
+  mutate(percentage = n / N,
+         source = "Empfehlungen") 
+
+
+#Nutzerprofile umformen damit Profil aus Prozentsätzen besteht
+rownames_to_column(as.data.frame((m_user_genre)), "user")  %>%
+  filter(user %in% c(U, 4)) %>% 
+  pivot_longer(!user, names_to = "movie_profile", values_to = "value") %>% 
+  group_by(user) %>% 
+  summarize(tot = sum(value),
+            percentage = value / tot,
+            value = value,
+            movie_profile = movie_profile, 
+            source = "Nutzerprofil") %>% 
+  filter(value > 0)
+
+
+```
+
+
 ```{r}
 # Funktion create_cleveland_plot() zum visuellen Vergleich von Top-N Empfehlungen und Nutzerprofil pro User implementieren, indem Empfehlungen und Nutzerprofil im 19-dimensionalen Genre-Raum verglichen werden.
 # Die Funktion create_cleveland_plot() verwendet idealerweise die Funktion get_topn_recos().
