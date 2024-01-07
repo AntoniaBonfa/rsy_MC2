@@ -53,12 +53,13 @@ df_movie_genre <- as.data.frame(MovieLenseMeta)
 rownames(df_movie_genre) <- df_movie_genre$title
 df_movie_genre <- df_movie_genre %>% select(-c("year", "url", "title"))
 
+m_movie_genre <- as(df_movie_genre, "matrix")
 
 ```
 
 
 ```{r 5. Dimension der Movie-Genre Matrix prüfen und ausgeben}
-dim(df_movie_genre)
+dim(m_movie_genre)
 
 ```
 Die Matrix enthält `r toString(dim(df_movie_genre)[1])` Filme und `r toString(dim(df_movie_genre)[2]-1)` Genres  
@@ -73,7 +74,7 @@ df_movie_genre$movie_profile <- apply(df_movie_genre, 1, function(row) {
 })
 
 df_genres_count <-  as.data.frame(table(df_movie_genre$movie_profile, dnn = "genre"))
-#colnames(df_genres_count) <- c("genre", "count")
+
 
 
 df_top30 <-df_genres_count %>%  slice_max(n = 30, order_by = Freq) 
@@ -119,13 +120,16 @@ movie_profiles <- rownames_to_column(df_movie_genre, "movie") %>%
 
 #Dataframes in Matrizen umwandeln
 m_movie_profiles <- as(movie_profiles, "matrix")
-m_user_ratings <- as(df_user_ratings, "matrix")
-m_user_ratings[is.na(m_user_ratings)] <- 0
+m_user_liked <- as(df_binary, "matrix")
+m_user_liked[is.na(m_user_liked)] <- 0
 
 
   
 #Matrixmultiplikation 
-m_user_genre <- m_user_ratings %*% m_movie_profiles 
+m_user_genre <- m_user_liked %*% m_movie_genre
+
+dim(m_movie_genre)
+dim(m_movie_profiles)
 
 head(m_user_genre)
 ```
@@ -201,11 +205,16 @@ calc_cos_similarity_twomx(m1,m2)
 
 
 ```{r 2. Dimension der Matrix der Cosinus-Ähnlichkeiten von Nutzern und Filmen prüfen uns ausgeben.}
-m_csim_user_movie <- calc_cos_similarity_twomx(m_user_genre, m_movie_profiles)
+
+#m_csim_user_movie_orig <- calc_cos_similarity_twomx(m_user_genre, m_movie_profiles)
+
+m_csim_user_movie <- calc_cos_similarity_twomx(m_user_genre, m_movie_genre)
+
+dim(m_movie_genre)
 
 
 dim(m_csim_user_movie)
-quantile(m_csim_user_movie)
+quantile(m_csim_user_movie, na.rm = TRUE)
 
 ```
 ```{r 3. 5-Zahlen Statistik für Matrix der Cosinus-Ähnlichkeiten prüfen uns ausgeben}
@@ -372,30 +381,48 @@ Im Histogram sehen wir dass bei zunehmendem N auch mehr tiefe Scores dabei sind.
 ```{r vortest für cleveland}
 N <- 20
 df_top20 <- get_topn_recos(m_neg_csim, N)
-U <- 183
+U <- 555
+
+#filmprofile herausfiltern
+df_topN_movies <- rownames_to_column(df_movie_genre, "movie") %>% filter(movie %in% df_top20$movie)
+
 #Top-Empfehlungen mit Filmprofil anreichern
-combined_df <- merge(df_top20, rownames_to_column(df_movie_genre['movie_profile'], "movie"), by="movie")
+df_topN_genre <- merge(df_top20, df_topN_movies, by="movie")
 
-combined_df %>% arrange(user, rank) %>% 
-  group_by(user) %>% 
+df_topN_genres_cleveland <- df_topN_genre %>% arrange(user, rank) %>% 
+    filter(user == U) %>% 
+  select(-c(movie, value, rank, movie_profile)) %>% 
+    pivot_longer(!user, names_to = "genre", values_to = "n") %>% 
+  group_by(genre) %>% 
+  summarize(n = sum(n)) %>% 
+  ungroup %>% 
+  mutate(tot = sum(n),
+         pct = n / tot,
+         source = "Empfehlungen")  %>% 
+  select(!tot) %>% 
+  filter(pct > 0.01)
+
+#Nutzerprofile anpassen
+df_user_genre_cleveland <- rownames_to_column(as.data.frame((m_user_genre)), "user")  %>%
   filter(user == U) %>% 
-  count(movie_profile) %>% 
-  mutate(percentage = n / N,
-         source = "Empfehlungen") 
+  pivot_longer(!user, names_to = "genre", values_to = "n") %>% 
+  mutate(tot = sum(n),
+         pct = n / tot,
+         source = "Nutzerprofil")  %>% 
+  select(!c(tot, user)) %>% 
+  filter(pct > 0.01)
 
-
-#Nutzerprofile umformen damit Profil aus Prozentsätzen besteht
-rownames_to_column(as.data.frame((m_user_genre)), "user")  %>%
-  filter(user %in% c(U, 4)) %>% 
-  pivot_longer(!user, names_to = "movie_profile", values_to = "value") %>% 
-  group_by(user) %>% 
-  summarize(tot = sum(value),
-            percentage = value / tot,
-            value = value,
-            movie_profile = movie_profile, 
-            source = "Nutzerprofil") %>% 
-  filter(value > 0)
-
+rbind(df_user_genre_cleveland, df_topN_genres_cleveland) %>% 
+  ggplot(aes(x = pct, genre, color = source))+
+  geom_point() +
+  geom_line(aes(group = genre), color = "black") +
+  labs(title = paste("Genre-Profil für Nutzer:in", U),
+       subtitle = paste("Anzahl Empfehlungen:", N),
+       x = "Prozentualer Anteil", 
+       y = "Genre",
+       color = "Art") +
+  theme_minimal()+
+  xlim(0,0.5)
 
 ```
 
