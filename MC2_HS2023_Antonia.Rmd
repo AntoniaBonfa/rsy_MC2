@@ -379,18 +379,19 @@ Im Histogram sehen wir dass bei zunehmendem N auch mehr tiefe Scores dabei sind.
 
 5. Top-20 Empfehlungen für Nutzer “5”, “25”, “50”, “150” visualisieren.
 ```{r vortest für cleveland}
-N <- 20
-df_top20 <- get_topn_recos(m_neg_csim, N)
-U <- 555
+# Funktion create_cleveland_plot() zum visuellen Vergleich von Top-N Empfehlungen und Nutzerprofil pro User implementieren, indem Empfehlungen und Nutzerprofil im 19-dimensionalen Genre-Raum verglichen werden.
+# Die Funktion create_cleveland_plot() verwendet idealerweise die Funktion get_topn_recos().
+create_cleveland_plot <- function(usermatrix = m_user_genre, moviematrix = df_movie_genre, cosim_matrix = m_neg_csim, userID, N){
+  
+  #Empfehlungen erstellen & mit Genres ergänzen
+  df_top20 <- get_topn_recos(cosim_matrix, N)
+  df_topN_movies <- rownames_to_column(moviematrix, "movie") %>% filter(movie %in% df_top20$movie)
+  df_topN_genre <- merge(df_top20, df_topN_movies, by="movie")
 
-#filmprofile herausfiltern
-df_topN_movies <- rownames_to_column(df_movie_genre, "movie") %>% filter(movie %in% df_top20$movie)
-
-#Top-Empfehlungen mit Filmprofil anreichern
-df_topN_genre <- merge(df_top20, df_topN_movies, by="movie")
-
-df_topN_genres_cleveland <- df_topN_genre %>% arrange(user, rank) %>% 
-    filter(user == U) %>% 
+  #Empfehlungen umformen für Plot
+  df_topN_genres_cleveland <- df_topN_genre %>% 
+    arrange(user, rank) %>% 
+    filter(user == userID) %>% 
   select(-c(movie, value, rank, movie_profile)) %>% 
     pivot_longer(!user, names_to = "genre", values_to = "n") %>% 
   group_by(genre) %>% 
@@ -399,58 +400,60 @@ df_topN_genres_cleveland <- df_topN_genre %>% arrange(user, rank) %>%
   mutate(tot = sum(n),
          pct = n / tot,
          source = "Empfehlungen")  %>% 
-  select(!tot) %>% 
-  filter(pct > 0.01)
-
-#Nutzerprofile anpassen
-df_user_genre_cleveland <- rownames_to_column(as.data.frame((m_user_genre)), "user")  %>%
-  filter(user == U) %>% 
-  pivot_longer(!user, names_to = "genre", values_to = "n") %>% 
-  mutate(tot = sum(n),
+  select(!tot) 
+  
+  #Nutzerprofile umformen für Plot
+  df_user_genre_cleveland <- rownames_to_column(as.data.frame((usermatrix)), "user")  %>%
+    filter(user == userID) %>% 
+    pivot_longer(!user, names_to = "genre", values_to = "n") %>% 
+    mutate(tot = sum(n),
          pct = n / tot,
          source = "Nutzerprofil")  %>% 
-  select(!c(tot, user)) %>% 
-  filter(pct > 0.01)
-
-rbind(df_user_genre_cleveland, df_topN_genres_cleveland) %>% 
+    select(!c(tot, user)) 
+  
+  #Datensätze kombinieren & Plot erstellen
+  clp  <- rbind(df_user_genre_cleveland, df_topN_genres_cleveland) %>% 
   ggplot(aes(x = pct, genre, color = source))+
-  geom_point() +
+  geom_point(alpha = 0.5) +
   geom_line(aes(group = genre), color = "black") +
-  labs(title = paste("Genre-Profil für Nutzer:in", U),
+  labs(title = paste("Genre-Profil für Nutzer:in", userID),
        subtitle = paste("Anzahl Empfehlungen:", N),
        x = "Prozentualer Anteil", 
        y = "Genre",
        color = "Art") +
   theme_minimal()+
   xlim(0,0.5)
+  return(clp)
+
+}
+
 
 ```
 
 
-```{r}
-# Funktion create_cleveland_plot() zum visuellen Vergleich von Top-N Empfehlungen und Nutzerprofil pro User implementieren, indem Empfehlungen und Nutzerprofil im 19-dimensionalen Genre-Raum verglichen werden.
-# Die Funktion create_cleveland_plot() verwendet idealerweise die Funktion get_topn_recos().
+```{r Clevelandplot für Nutzer}
 
-create_cleveland_plot <- function(df){
-  
-  df <- get_topn_recos()
-  ggplot(df, aes(genre, pct))+
-    geom_line()+
-    geom_point()
-  
+for (user in users_neg) {
+  clp <- create_cleveland_plot(userID = user,N = 20)
+  print(clp)
+
 }
-
-df_top20 %>% 
-  group_by(user) %>% 
-  summarize(max = max(value),
-         min = min(value)) %>% 
-  ggplot(aes())
-
 
 
 ```
 
 6. Für Nutzer “133” und “555” Profil mit Top-N Empfehlungen für N = 20, 30, 40, 50 analysieren, visualisieren und diskutieren.
 ```{r}
+Nlist <- c(20,30,40,50)
+
+for (Ns in Nlist) {
+  clp <- create_cleveland_plot(userID = 133,N = Ns)
+  print(clp)
+}
+
+for (Ns in Nlist) {
+  clp <- create_cleveland_plot(userID = 555,N = Ns)
+  print(clp)
+}
 
 ```
