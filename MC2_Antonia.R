@@ -64,9 +64,12 @@ analyze_topn_recos <- function(df, Ns){
     ggplot(aes(x = N, y = min_score, fill = N))+
     geom_boxplot()+
     labs(title = "Verteilung der minimalen Scores",
-         x = "TopN",
-         y = "Minimale Aehnlichkeit")+
-    theme_minimal()
+         x = "Anzahl Empfehlungen",
+         y = "Minimale Aehnlichkeit",
+         fill = "")+
+    theme_minimal()+
+    scale_fill_viridis(discrete = TRUE)+
+    theme(legend.position = "none") 
   
   return(list(min_scores, plot1, plot2))
   
@@ -132,13 +135,15 @@ create_cleveland_plot <- function(usermatrix = m_user_genre, moviematrix = df_mo
   #### Datensätze kombinieren & Plot erstellen   #### 
   clp <- rbind(df_user_genre_cleveland, df_topN_genres_cleveland) %>% 
     ggplot(aes(x = pct, genre, color = source))+
-    geom_point(alpha = 0.5) +
+    geom_point(alpha = 0.5, size = 2) +
     geom_line(aes(group = genre), color = "black") +
-    labs(title = paste("Genre-Profil für ausgewählte Nutzer:innen"),
+    labs(title = paste("Genre-Profil fuer ausgewaehlte Nutzer:innen"),
          x = "Prozentualer Anteil", 
          y = "Genre",
-         color = "Art") +
-    scale_x_continuous(limits = c(0,0.3))
+         color = "Art",
+         legend = "Anzahl Empfehlungen") +
+    scale_x_continuous(limits = c(0,0.3))+
+    theme_bw()
   
   
   return(clp)

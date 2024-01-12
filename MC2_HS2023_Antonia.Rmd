@@ -25,13 +25,10 @@ knitr::opts_chunk$set(
 ### Bibliotheken laden
 ```{r, message=FALSE, warning=FALSE}
 library(tidyverse)
-library(gridExtra)
 library(dplyr)
 library(data.table)
-library(ggplot2)
-library(reshape2)
-library(rsample)
 library(recommenderlab)
+library(viridis)
 source("MC2_Antonia.R")
 ```
 
@@ -125,10 +122,12 @@ ggplot(df_genres_count2, aes(count, genre))+
        x = "Anzahl Filme",
        y = "Genre")
 ```
-#### 7. Nutzerprofile im Genre-Vektorraum erzeugen
+#### 7. Nutzerprofile im Genre-Vektorraum erzeugen 
+
+
 Als nächstes schauen wir uns an, welche Genres die Nutzer:innen gerne schauen. Dazu verwenden wir den Datensatz mit den User-liked-movies und multiplizieren diesen mithilfe einer Matrix-Multiplikation mit der Film-Genre Matrix. Wir prüfen auch hier die Dimensionen (diese müssten Anzahl User x Anzahl Genres entsprechen). Man könnte hier noch anstatt der Zählung der Genres pro User zu nehmen diese noch durch die Anzahl aller Ratings des Users dividieren, um ein noch genaueres Profil zu erhalten. Um einen Eindruck eines Profils zu erhalten reicht es aber, die Zählung der Genres zu machen. 
 
-```{r 7. Nutzerprofile im Genre-Vektorraum erzeugen}
+```{r 7. Nutzerprofile im Genre-Vektorraum erzeugen, paged.print=TRUE}
 
 #movie - Filmprofil Matrix 
 movie_profiles <- rownames_to_column(df_movie_genre, "movie") %>% 
@@ -150,7 +149,7 @@ head(m_user_genre)
 ```
 Auf den ersten Blick sieht es gut aus;die Einträge sehen so aus wie wir sie erwarten. 
 
-Wenn wir nun  wieder ein Histogram machen mit den Anzahl Likes pro Genre ist das Bild sehr ähnlich wie die Verteilung bei den Filmen. Das Bild mit den Genre-Kombinationen ist ebenfalls sehr ähnlich zum vorherigen mit den Filmen:
+Wenn wir nun  wieder ein Histogram machen mit den Anzahl Likes pro Genre ist das Bild sehr ähnlich wie die Verteilung bei den Filmen:
 
 ```{r}
 df_user_genres_count <- rownames_to_column(as.data.frame(colSums(m_user_genre)))
@@ -160,8 +159,12 @@ ggplot(df_user_genres_count, aes(count, genre))+
   labs(title= "Verteilung Genres Userbewertungen",
        x = "Anzahl Bewertungen",
        y = "Genre")
+```
+Auch hier ist Drama der Spitzenreiter, gefolgt von Comedy und Action.
 
+In den Genre-Kombinationen finden wir ebenfalls in etwa die gleiche Verteilung wie bei den Filmen - er scheint also auch mit der Anzahl Ratings kein Umverteilen der Reihenfolge der Beliebtheit zu geben:  
 
+```{r}
 ## Grafik mit Movie Profilen statt nur Genres
 m_user_movie_profile <- m_user_liked %*% m_movie_profiles
 
@@ -177,7 +180,7 @@ ggplot(aes(count, genre))+
 
 
 ```
-
+ 
 
 ```{r 8. Dimension der User-Genre-Profil Matrix prüfen und ausgeben}
 print(paste("Dimensionen der User-Genre Matrix:", dim(m_user_genre)[1], dim(m_user_genre)[2]))
@@ -207,7 +210,7 @@ Bei der cosine Similarity wird die Ähnlichkeit zwischen zwei Vektoren berechnet
 ##### Testen der Funktion anhand eines einfachen Beispiels
 Zur Überprüfung meiner Funktion habe ich ein sehr einfaches Beispiel gemacht welches zu funktionieren scheint; die Cosine-Similarity der beiden Matrizen sieht gut aus; die Diagnonalelemente sind identisch bei der Multiplikation und die Ähnlichkeit zwischen 2 und 3 muss auch sehr hoch sein. 
 
-```{r Test Funktion}
+```{r Test Funktion, paged.print=FALSE}
 m1 <- matrix(1:4, nrow = 2, ncol = 2)
 m2 <- matrix(1:4, nrow = 2, ncol = 2)
 
@@ -254,6 +257,8 @@ ggplot(df_csim_long, aes(value))+
        y = "Dichte")
 
 ```
+
+
 ####  5. Cosinus-Ähnlichkeiten von Nutzern und Filmen mit Dichteplot für Nutzer “241”, “414”, “477”, “526”,“640” und “710” visualisieren.
 Als nächstes wollen wir die Dichtekurven von bestimmten Nutzer:innen anschauen: 
 
@@ -268,16 +273,20 @@ df_csim_long %>% filter(user %in% userlist) %>%
        title = "Cosinus-Ähnlichkeit für ausgewählte Nutzer:innen", 
        color = "User")+
   facet_wrap(~paste("User",user))+
-  theme(legend.position = "none")  
+  theme(legend.position = "none")  +
+  scale_fill_viridis(discrete = TRUE)
 
 ```
-Wir haben 6 sehr unterschiedliche Dichte-Profile. User 241, 414 und 477 alle haben eher eine Häufung Nahe 0 (also viele sehr kleine Werte) und dann wieder Höhen in der Mitte - gegen das obere Ende nimmt es dann wieder ab. Dies deutet darauf hin, dass sie eher spezifische Genres mögen und nicht einfach alles ein bisschen - Filme, deren Genres also nicht im User-Profil vorkommen sorgen für tiefe Ähnlichkeiten. Die Position der Häufungen lassen auch Rückschlüsse auf den Genre-Geschmack der User zu: wenn die Häufing sehr tief ist, dann mag der User eher unbeliebte / unbekannte Genres (da dann wenige Filme das Genre haben). Ist der Spike eher hoch (so ab 0.6) hat die Person wohl eher ein Geschmack für die Hauptgenres Drama, Comedy und Action. 
+Wir haben 6 sehr unterschiedliche Dichte-Profile. User 241, 414 und 477 alle haben eher eine Häufung Nahe 0 (also viele sehr kleine Werte) und dann wieder Höhen in der Mitte - gegen das obere Ende nimmt es dann wieder ab. Dies deutet darauf hin, dass sie eher spezifische Genres mögen und nicht einfach alles ein bisschen - Filme, deren Genres also nicht im User-Profil vorkommen sorgen für tiefe Ähnlichkeiten. 
 
-Wenn wir uns noch User 640 anschauen scheint dieser eher ein Allrounder zu sein. Sehr wenig tiefe Werte aber sehr viele Werte nahe der Mitte deuten darauf hin, dass diese Person eigentlich fast alle Filmgenres mag. 
+Die Position der Häufungen lassen auch Rückschlüsse auf den Genre-Geschmack der User zu: wenn die Häufing sehr tief ist, dann mag der User eher unbeliebte / unbekannte Genres (da dann wenige Filme das Genre haben). Ist der Spike eher hoch (so ab 0.6) hat die Person wohl eher ein Geschmack für die Hauptgenres Drama, Comedy und Action. User 241 hat also wohl sehr wenig Genres und ist eher Fan von bekannten Genres, während User 477 eher im Mittelfeld bei den Genres ist (also nicht Drama und Comedy). User 414 scheint mindestens eines der bekannteren Genres zu mögen, aber auch eines dass nicht so häufig vorkommt. 
 
-Bei User 710 & 526 scheint das ebenfalls der Fall zu sein: auch hier gibt es wenige Werte nahe 0. Der Unterschied zwischen User 526 und 710 scheint darin zu sein, dass User 526 vermutlich eher Comedy & Drama Filme mag (da wir ja bereits festgestellt haben, dass das die häufigsten Genres sind). 
 
-Bei User 710  gibt es wenige Werte bei 0 aber die erste Häufung bei ca. 0.1 - diese Person hat also vermutlich fast alle Genres mal geliked, aber bei einige eher weniger. 
+Wenn wir uns User 640 anschauen scheint dieser eher ein Allrounder zu sein. Sehr wenig tiefe Werte aber sehr viele Werte nahe der Mitte deuten darauf hin, dass diese Person eigentlich fast alle Filmgenres mag. 
+
+Bei User 710 & 526 scheint das ebenfalls der Fall zu sein: auch hier gibt es wenige Werte nahe 0. Der Unterschied zwischen User 526 und 710 scheint darin zu sein, dass User 526 vermutlich eher Comedy & Drama Filme mag (da wir ja bereits festgestellt haben, dass das die häufigsten Genres sind und daher der Spike eher weit rechts ist). 
+
+Bei User 710  gibt es wenige Werte bei 0 aber die erste Häufung bei ca. 0.1 - diese Person hat also vermutlich fast alle Genres mal geliked, auch diejenigen die nicht allgemein beliebt sind.
 
 Wir überprüfen diese Vermutungen indem wir uns die Nutzerprofile anschauen:
 
@@ -288,13 +297,17 @@ rownames_to_column(as.data.frame(m_user_genre), "User")%>%
 In der Tabelle scheint sich unsere Vermutung zu bestätigen; wir visualisieren das noch mit einem Plot:
 
 ```{r}
+
 rownames_to_column(as.data.frame(m_user_genre), "User")%>% 
   filter(User %in% userlist) %>% 
+  mutate(User = as.factor(User)) %>% 
   pivot_longer(!User, names_to = "Genre", values_to = "values") %>% 
   ggplot(aes(User, values, fill = Genre))+
   geom_col(position = "dodge")+
   labs(title = "Zählung Genres pro User",
-       y = "Anzahl gelikte Genres")
+       y = "Anzahl gelikte Genres")+
+  scale_fill_viridis(discrete = TRUE)+
+  theme_minimal()
 
 ```
 Wie erwartet, haben User 640 & 710 praktisch in allen Genres Filme drin. User 526 hat in der Tat Drama am liebsten, während 710 Drama zwar auch mag, aber alle anderen Genres auch mehr mag als 526. 
@@ -324,7 +337,8 @@ print(df_neg_rowsum)
 
 ggplot((df_neg_rowsum), aes(User, Anzahl, fill = User))+
   geom_col()+
-  labs(title = "Anzahl Zeilen in Negativmatrix")
+  labs(title = "Anzahl Zeilen in Negativmatrix")+
+  scale_fill_viridis(discrete = TRUE)
 
 ```
 
@@ -378,7 +392,9 @@ Um die Scores zu vergleichen benutzen wir Histogramme:
 Ns <- c(10, 20, 50, 100)
 analyze_topn_recos(m_neg_csim, Ns)
 ```
-Sowohl im Histogram wie auch in den Boxplot sehen wir, dass mit zunehmendem N auch mehr tiefe Ähnlichkeiten dazu kommen. Das macht auch Sinn, da die Empfehlungen ja "schlechter" werden je tiefer man in der Rangliste absteigt. Ausserdem nimmt die Varianz zu; bei kleinem N ist die Ähnlichkeit der Top Empfehlungen sehr ähnlich zueinander. Dies kommt daher, da User in der Regel ja Filme mit ähnlichen Genres vorgeschlagen bekommen. Wenn der Genre-Mix identisch ist zwischen Filmen, dann ist deren Ähnlichkeit auch identisch. Bei zunehmendem N haben wir vermehrt Filme die vielleicht ein etwas anderen Genre-Mix enthalten und daher auch einen anderen Ähnlichkeits-Score haben. 
+Sowohl im Histogram wie auch in den Boxplot sehen wir, dass mit zunehmendem N auch mehr tiefe Ähnlichkeiten dazu kommen. Das macht Sinn, da die Empfehlungen ja "schlechter" werden je tiefer man in der Rangliste absteigt. Ausserdem nimmt die Varianz zu; bei kleinem N haben die Empfehlungen eine sehr ähnlichen Ähnlichkeitsscore. Dies kommt daher, da User in der Regel ja Filme mit den Genres vorgeschlagen bekommen die sie bisher gemocht haben. 
+
+Wenn der Genre-Mix identisch ist zwischen Filmen, dann ist deren Ähnlichkeit auch identisch. Bei zunehmendem N haben wir vermehrt Filme die vielleicht ein etwas anderen Genre-Mix enthalten und daher auch einen anderen Ähnlichkeits-Score haben. 
 
 
 #### 5. Top-20 Empfehlungen für Nutzer “5”, “25”, “50”, “150” visualisieren.
@@ -392,20 +408,43 @@ create_cleveland_plot(users = users_neg, Ns = c(20))+
 
 
 ```
-Wenn wir uns die Cleveland Plots der verschiedenen Nuzter:innen anschauen, so sehen wir, dass bei 
+Wenn wir uns die Cleveland Plots der verschiedenen Nuzter:innen anschauen, so sehen wir, dass bei User 150 als Empfehlungen nur die Genres vorkommen, die den grössten Anteil am Nutzerprofil hatten. Alle anderen Genres wurden eher vernachlässigt. Bei diesem User sind die häufigsten Genres die in den Filmen vorkommen der Hautpbestandteil der Empfehlungen: Comedy, Romance, Drama und Action. 
+
+Bei User 25 hat es ebenfalls ein Bias zugunsten der beiden am häufigsten vorkommenden Genres im Nutzerprofil. 
+
+Bei User 5 hingegen wurde nur Comedy mehr empfohlen als im Nuzterprofil  vorkam - alle anderen Genres wurden deutlich weniger empfohlen als der User sie im Profil hatte. Bei User 50 ist wieder ein sehr starker Bias zu Romance und Drama. 
+
+Ein möglicher Grund für diesen starken Bias ist, dass wir zum einen schlichtweg mehr Filme mit diesen Genres haben und zum anderen, dass beide Genres sehr wenig in Kombination mit anderen Genres vorkommt. Wenn der Recommender also denkt der User mag Drama & Romance, dann bekommt er Filmempfehlungen, die nur diese Genres haben. Wenn der User jedoch beispielsweise Adventure mag, ist die Vielfalt der Genres in den Empfehlungen deutlich höher, da dieses Genre selten alleine vorkommt. 
 
 
-6. Für Nutzer “133” und “555” Profil mit Top-N Empfehlungen für N = 20, 30, 40, 50 analysieren, visualisieren und diskutieren.
+#### 6. Für Nutzer “133” und “555” Profil mit Top-N Empfehlungen für N = 20, 30, 40, 50 analysieren, visualisieren und diskutieren.
 ```{r Cleveland für Nutzer 133 und 555,  fig.align="center", echo = FALSE, fig.height=12, fig.width=6}
 Nlist <- c(20,30,40,50)
-userlist <- c(133,555)
-create_cleveland_plot(users = userlist, Ns = Nlist)+
-  facet_grid(paste0("Top", N)~paste("User", user))
+userIds <- c(133,555)
+create_cleveland_plot(users = userIds, Ns = Nlist)+
+  facet_grid(paste0("Top", N)~paste("User", user))+
+  scale_x_continuous(limits = c(0,0.2))
 
 ```
+######  User 133: 
+Wenn wir die Entwicklung der Cleveland Plots mit zunehmenden Empfehlungen anschauen, so fällt auf, dass zuerst die empfohlenen Genres weniger sind als im Nutzerprofil vorhanden. Der Recommender empfiehlt hier vor allem Drama und Comedy, beide mit dem gleichen Anteil. Spannend ist es, dass mit zunehmenden Anzahl Empfehlungen eigentlich nur die Empfehlungen für Drama und Comedy zunehmen; alle anderen Genres scheinen unverändert zu bleiben. 
+
+
+######  User 555: 
+Dieser User hat eine deutlich grössere Variation in den Genres als User 133. Vermutlich unter anderem, weil er Genres hat, die gerne kombiniert werden wie Action, Adventure und Comedy. Hier scheint sich der Genre-Mix auch mit zunehmenden N nicht grossartig zu ändern. Da wie erwähnt viele der Genres solche sind, die auch in vielen verschiedenen Filmen vorkommen, erstaunt das also nicht.
+
+Allgemein scheint in beiden Fällen die Vielfalt an Genres nicht zuzunehmen bei zunehmender Anzahl Genres. Dies ist auch ein grosser Nachteil von Content based Recommendern: die Empfehlungen werden immer nur so sein wie die bisher gelikten Sachen. Neuentdeckungen sind mit Content based Recommendern nicht möglich. Das wäre also ein Vorteil für Collaboration Based Recommender.
+Im Idealfall sollte man aber für eine korrekte Implementation von Recommendern wenn möglich Ansätze aus verschiedenen Modellen nutzen, um die Schwächen der einzelnen Systeme auszugleichen. 
+
+### Learnings aus der Challenge
+
+Bei Content Based Recommendern ist es unglaublich wichtig, welche Variablen für die Erstellung des Item Profils verwendet werden und auch wie sich die Werte darin verteilen. 
+Wenn es Items hat, die nur eine einzige Ausprägung der Variable haben, schränken diese nachher die Empfehlungen übermässig ein; da - wenn der User eine Präferenz für ein solches Item zeigt - nur noch genau diese Kategorie empfohlen wird, da die Ähnlichkeit zu anderen Kombinationen zu tief ist. 
+Interessant wäre es noch gewesen User zu analysieren die Genres mögen die im Datensatz kaum vorkommen; wie würde der Recommender dort Empfehlungen machen wenn nicht genügend nicht geratete Items vorhanden sind um 50 Items zu empfehlen? 
+
 
 ### Nutzung von ChatGPT
 Der wichtigste Punkt wofür ich ChatGPT genutzt habe war, um die Spalte mit den Genre-Kombis bei den Filmen zu erzeugen. Ansonsten habe ich ChatGPT nur zum Debugging benutzt. Statt ChatGPT habe ich auch viel gegoogelt - die Funktion für die Cosine Similarity kam auch durch eine Google Suche zustande, da meine erste Implementation nicht geklappt hat. 
-Persönlich google ich lieber zuerst selber, da der Code von ChatGPT gerade in R häufig nicht besonders gut ist und ich auch häufig nicht verstehe, was der Code jetzt genau macht. 
+Persönlich google ich lieber zuerst selber, da der Code von ChatGPT gerade in R häufig nicht besonders gut ist und ich auch häufig nicht verstehe, was der Code jetzt genau macht. (für die Genre-Kombis kann ich schon etwa sagen, was genau passiert - aber ich habe den Verdacht, dass es auch deutlich einfacher ginge.)
 
 
