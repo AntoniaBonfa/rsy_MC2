@@ -33,12 +33,16 @@ library(ggplot2)
 library(reshape2)
 library(rsample)
 library(recommenderlab)
+source("hthisismyrile.R")
 ```
 
 
 7.1 Erzeugung von Film- & Nutzerprofilen [20 Punkte]
 Für die Film- und Nutzerprofile verwenden wir den MovieLense Datensatz von Recommenderlab. 
-Für die Nutzer:innen haben wir eine Matrix mit allen gerateten Filmen. Um Empfehlungen zu machen, wandeln wir die Ratings um; für alle Ratings die grösser als 3 sind setzen wir eine 1 (= der Film hat gefallen). Idealerweise sollten wir natürlich statt einem fixen Masstab für alle Nutzer:innen lieber die Werte normieren, sprich jeden Wert um das durchschnittliche Rating des Nutzers korrigieren und dann die positiven Werte als Likes nehmen. So würden wir auch das individuelle Rating-Verhalten der Nutzer:innen berücksichtigen. 
+
+Für die Nutzer:innen haben wir eine Matrix mit allen gerateten Filmen. Um Empfehlungen zu machen, wandeln wir die Ratings um; für alle Ratings die grösser als 3 sind setzen wir eine 1 (= der Film hat gefallen). 
+
+Idealerweise sollten wir natürlich statt einem fixen Masstab für alle Nutzer:innen lieber die Werte normieren, sprich jeden Wert um das durchschnittliche Rating des Nutzers korrigieren und dann die positiven Werte als Likes nehmen. So würden wir auch das individuelle Rating-Verhalten der Nutzer:innen berücksichtigen. 
 ```{r 1. MovieLense Daten einlesen}
 data(MovieLense)
 df_user_ratings <- as.data.frame(as(MovieLense, "matrix"))
@@ -46,18 +50,18 @@ df_user_ratings <- as.data.frame(as(MovieLense, "matrix"))
 ```
 
 ```{r 2. Binäre User-Liked-Items Matrix für alle Nutzer erzeugen}
-df_binary <- ifelse(df_user_ratings >3 ,1,0)
+df_user_liked_items <- ifelse(df_user_ratings >3 ,1,0)
 
 ```
 
 
 ```{r 3. Dimension der User-Liked-Items Matrix prüfen und ausgeben}
-print(dim(df_binary))
+print(paste("Dimensionen der Binären User-Liked-Items Matrix:",dim(df_user_liked_items)))
 ```
-Die Matrix enthält `r toString(dim(df_binary)[1])` User und `r toString(dim(df_binary)[2])` Items. 
+Die Matrix enthält `r toString(dim(df_user_liked_items)[1])` User und `r toString(dim(df_user_liked_items)[2])` Items. 
 
 
-Bei den Filmen  haben wir bereits eine Matrix mit den Filmen und deren Genres die wir verwenden können. Ich forme die Matrix minim um, damit die Filme als Reihennamen verfügbar sind und entferne unnötige Spalten wie Erscheinungsjahr und Link zum Eintrag. 
+Bei den Filmen  haben wir bereits eine Matrix mit den Filmen und deren Genres die wir verwenden können. Ich forme die Matrix minim um, damit die Filme als Reihennamen verfügbar sind und entferne unnötige Spalten wie Erscheinungsjahr und Link zum Eintrag. Auch hier prüfen wir am Schluss wieder die Dimensionen.
 ```{r 4. Movie-Genre Matrix für alle Filme erzeugen}
 df_movie_genre <- as.data.frame(MovieLenseMeta)
 rownames(df_movie_genre) <- df_movie_genre$title
@@ -102,7 +106,6 @@ ggplot()+
        title = "Verteilung der Filme nach Genre-Kombination",
        subtitle = paste0("(Top-30 Kombinationen, von insgesamt ", toString(dim(df_genres_count)[1]), ")"))
 
-
 ```
 Insgesamt haben wir `r toString(dim(df_genres_count)[1])` unterschiedliche Genre-Kombinationen, wobei `r toString(n_single_genres[1,1])` eine einzigartige Kombi sind die nur jeweils 1 Film hat. 
 
@@ -118,13 +121,10 @@ ggplot(df_genres_count2, aes(count, genre))+
        x = "Anzahl Filme",
        y = "Genre")
 ```
+
 Als nächstes schauen wir uns an, welche Genres die Nutzer:innen gerne schauen. Dazu verwenden wir den Datensatz mit den User-liked-movies und multiplizieren diesen mit der Film-Genre Matrix. 
 
 ```{r 7. Nutzerprofile im Genre-Vektorraum erzeugen}
-#Zur Erzeugung der Nutzerprofile im Genre-Vektorraum wird empfohlen folgendermassen vorzugehen: 
-#User-Genre-Profil Matrix durch Multiplikation von User-Liked-Items Matrix und Movie-Genre Matrix erzeugen.
-
-
 #movie - Filmprofil Matrix
 movie_profiles <- rownames_to_column(df_movie_genre, "movie") %>% 
   select(movie, movie_profile) %>% 
@@ -134,7 +134,7 @@ movie_profiles <- rownames_to_column(df_movie_genre, "movie") %>%
 
 #Dataframes in Matrizen umwandeln
 m_movie_profiles <- as(movie_profiles, "matrix")
-m_user_liked <- as(df_binary, "matrix")
+m_user_liked <- as(df_user_liked_items, "matrix")
 m_user_liked[is.na(m_user_liked)] <- 0
 
 
@@ -152,7 +152,7 @@ colnames(df_user_genres_count) <- c("genre", "count")
 ggplot(df_user_genres_count, aes(count, genre))+
   geom_col()+
   labs(title= "Verteilung Genres Userbewertungen",
-       x = "Anzahl Filme",
+       x = "Anzahl Bewertungen",
        y = "Genre")
 
 
@@ -166,7 +166,7 @@ ggplot(aes(count, genre))+
   geom_col()+
   labs(title= "Verteilung Genre-Kombis Userbewertungen",
        subtitle = "Top 30 Genre-Kombis gem. User",
-       x = "Anzahl Filme",
+       x = "Anzahl Bewertungen",
        y = "Genre")
 
 
@@ -178,50 +178,24 @@ dim(m_user_genre)
 ```
 Nach der Matrixmultiplikation haben wir weiterhin `r toString(dim(m_user_genre)[1])` User  und `r toString(dim(m_user_genre)[2])` Genre-Profile. Die Multiplikation scheint also korrekt verlaufen zu sein.   
 
-##STILL TO DO
-```{r 9. Anzahl unterschiedlicher Nutzerprofile bestimmen mit Stärke der Genre-Kombination}
-#(a) vollständig
-rownames_to_column(as.data.frame(m_user_genre), "user") %>% 
-  pivot_longer(!user, names_to = "movie", values_to = "value") %>% 
-  filter(value > 0) %>% 
-  distinct(movie)
-
-
-#(b) binär 
-#Zur Analyse der Anzahl unterschiedlicher Nutzer-Profile, Fall (b) kann z.B. mutate(across(.cols = everything(), .fns = ~ ifelse(.x > 0, 1, 0))) verwendet werde
-df_binary[is.na(df_binary)] <- 0
-m_user_genre2 <- as(df_binary, "matrix") %*% m_movie_profiles 
-
-rownames_to_column(as.data.frame(m_user_genre2), "user") %>% 
-  pivot_longer(!user, names_to = "movie", values_to = "value") %>% 
-  filter(value > 0) %>% 
-  distinct(movie)
-
-
-
-
-
-m3 <- as.data.frame(m_user_genre) %>% mutate(across(.cols = everything(), .fns = ~ ifelse(.x > 0, 1, 0)))
-
-
-rownames_to_column(as.data.frame(m3), "user") %>% 
-  pivot_longer(!user, names_to = "movie", values_to = "value") %>% 
-  filter(value > 0) %>% 
-  distinct(movie)
-
-
-
-dim(distinct(m3))
-sum(unique(m3))
-dim(m3)
-
+Als nächstes wollen wir schauen, wie einzigartig die Nutzerprofile sind. Dazu schauen wir an, wie viele Reihen im Datensatz von Nutzer-Genre identisch sind:
+```{r 9. Anzahl unterschiedlicher Nutzerprofile bestimmen mit Stärke der Genre-Kombination: vollständig}
+#vollständig: Anzahl unique Reihen
+print(paste("Anzahl unterschiedlicher Profile mit Stärke der Genres:",dim(unique(m_user_genre))[1]))
+#Binär: Anzahl unique Reihen aber mit mutierten Ratings:
+print(paste("Anzahl unterschiedlicher Profile binäre Genres:",dim(distinct(as.data.frame(m_user_genre) %>% mutate(across(.cols = everything(), .fns = ~ ifelse(.x > 0, 1, 0)))))[1]))
 ```
+
+Wenn die Stärke der Genres berücksichtigt wird (also die Anzahl Filme für jedes Genre), so haben alle Nutzer:innen ein einzigartiges Profil, da die Dimensionen der einzigartigen Reihen `r toString(dim(unique(m_user_genre))[1])` ist, was der Anzahl Nutzer:innen entspricht. Wenn wir jedoch die Zählung der einzelnen Genres weglassen und nur ein binär "mag Genre ja/nein" vergeben, sind es deutlich weniger einzigartige Profile; `r toString(dim(distinct(as.data.frame(m_user_genre) %>% mutate(across(.cols = everything(), .fns = ~ ifelse(.x > 0, 1, 0)))))[1])`, was einer Reduktion von 60% entspricht. 
 
 
 ### 7.2 Ähnlichkeit von Nutzern und Filmen [10 Punkte]
-Als nächstes wollen wir die Cosine-Ähnlichkeit zwischen Filmen und Nutzer:innen bestimmen. Dazu verwenden wir wieder nur die reinen Genres und nicht die Kombinationen. 
+Als nächstes wollen wir die Cosine-Ähnlichkeit zwischen Filmen und Nutzer:innen bestimmen. Dazu verwenden wir wieder nur die reinen Genres und nicht die Kombinationen.
+Bei der cosine Similarity wird die Ähnlichkeit zwischen zwei Vektoren berechnet. 
+
 ```{r 1. Cosinus-Ähnlichkeit zwischen User-Genre- und Movie-Genre-Matrix berechnen}
 # Funktion zur Berechnung von Cosinus-Ähnlichkeiten zweier Matrizen namens calc_cos_similarity_twomtrx() implementieren, um Nutzerprofile und Filme im Vektorraum der Genres zu vergleichen. Die richtige Funktionsweise soll an einem einfachen Beispiel getestet und dokumentiert werden.
+
 calc_cos_similarity_twomx <- function(m1, m2){
   #### Parameter: 2 Matrizen für die die Cosine-Ähnlichkeit bestummen werden soll####
   #### Output: Matrix mit den Cosine-Similarities ####
@@ -229,7 +203,9 @@ calc_cos_similarity_twomx <- function(m1, m2){
   denominator <- sqrt(rowSums(m1^2) %*% t(rowSums(m2^2)))
   cos_sim <- numerator / denominator
   return(cos_sim)
-  } 
+} 
+
+
 ```
 
 
@@ -292,7 +268,7 @@ df_csim_long <- rownames_to_column(as.data.frame(m_csim_user_movie), "user") %>%
 ggplot(df_csim_long, aes(value))+
   geom_density()+
   labs(title = "Dichteplot von Cosinus-Ähnlichkeit",
-       x = "Cosinus-Ähnlichkeit",
+       x = "minimale Cosinus-Ähnlichkeit",
        y = "Dichte")
 
 ```
@@ -302,7 +278,10 @@ userlist <- c(241, 414, 477, 526, 640, 710)
 
 df_csim_long %>% filter(user %in% userlist) %>% 
   ggplot(aes(value, color = user))+
-  geom_density()
+  geom_density()+
+  labs(x = "User",
+       y = "Dichte",
+       )
 
 ```
 
@@ -318,7 +297,6 @@ df_neg <- df_user_ratings %>%
 
 #prüfen, ob Anzahl NAs im ursprünglichen Dataframe der Anzahl 1er entspricht im Negativabzug (sollte 0 ergeben)
 sum(is.na(df_user_ratings)) - sum(df_neg == 1)
-
 
 ```
 Da der Wert 0 ist sollte es stimmen. 
